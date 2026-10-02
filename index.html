@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Department of Puns</title>
+  <meta name="description" content="Clean, kind, fully groan wordplay.">
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231b3b36'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-size='36' font-family='Georgia' fill='%23f7e7a9'%3EP%3C/text%3E%3C/svg%3E">
+  <style>
+    :root {
+      --ink: #172522;
+      --green: #1b3b36;
+      --gold: #d6a727;
+      --paper: #fffdf7;
+      --mist: #e8eee9;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.55;
+    }
+
+    header {
+      background: var(--green);
+      color: white;
+      padding: 4.5rem 1.5rem 3.75rem;
+      text-align: center;
+    }
+
+    .seal {
+      display: inline-grid;
+      place-items: center;
+      width: 64px;
+      height: 64px;
+      border: 2px solid var(--gold);
+      border-radius: 50%;
+      color: var(--gold);
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.4rem, 7vw, 4.6rem);
+      line-height: 1;
+      letter-spacing: -0.04em;
+    }
+
+    .motto {
+      margin: 1rem auto 0;
+      max-width: 35rem;
+      color: #f7e7a9;
+      font-size: 1.18rem;
+    }
+
+    main {
+      max-width: 56rem;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 4rem;
+    }
+
+    .introduction {
+      max-width: 42rem;
+      margin: 0 auto 2.5rem;
+      text-align: center;
+      font-size: 1.1rem;
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: .6rem;
+      margin-bottom: 2rem;
+    }
+
+    button {
+      border: 1px solid #9eb2aa;
+      border-radius: 999px;
+      background: white;
+      color: var(--green);
+      cursor: pointer;
+      font: inherit;
+      padding: .45rem 1rem;
+    }
+
+    button:hover,
+    button.active {
+      background: var(--green);
+      border-color: var(--green);
+      color: white;
+    }
+
+    .pun-list {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .pun {
+      background: white;
+      border: 1px solid #d7dfda;
+      border-left: 5px solid var(--gold);
+      border-radius: 8px;
+      padding: 1.35rem 1.5rem;
+      box-shadow: 0 3px 10px rgba(23, 37, 34, .05);
+    }
+
+    .pun p {
+      margin: 0;
+      font-size: 1.18rem;
+    }
+
+    .topic {
+      display: inline-block;
+      margin-top: .85rem;
+      color: #536760;
+      font-family: Arial, sans-serif;
+      font-size: .78rem;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    footer {
+      border-top: 1px solid #d7dfda;
+      color: #536760;
+      padding: 2rem 1.5rem 3rem;
+      text-align: center;
+    }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="seal" aria-hidden="true">P</div>
+    <h1>Department of Puns</h1>
+    <p class="motto">No pun is funny until it’s fully groan.</p>
+  </header>
+
+  <main>
+    <section class="introduction">
+      <p>
+        Clean, kind wordplay, reviewed by the Pun-dent.
+        New submissions will soon be accepted for official consideration.
+      </p>
+    </section>
+
+    <nav class="filters" aria-label="Filter puns by topic">
+      <button class="active" data-topic="all">All puns</button>
+      <button data-topic="animals">Animals</button>
+      <button data-topic="everyday">Everyday life</button>
+    </nav>
+
+    <section class="pun-list" aria-label="Pun collection">
+      <article class="pun" data-topic="animals">
+        <p>Did you know bees are allergic to pollen? We know that because they develop hives!</p>
+        <span class="topic">Animals</span>
+      </article>
+
+      <article class="pun" data-topic="animals">
+        <p>Where did Noah keep the bees? In the ark-hive.</p>
+        <span class="topic">Animals</span>
+      </article>
+
+      <article class="pun" data-topic="everyday">
+        <p>I told my wife she was drawing her eyebrows too high. She looked surprised.</p>
+        <span class="topic">Everyday life</span>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    <p>© Department of Puns · Officially groan-worthy.</p>
+  </footer>
+
+  <script>
+    const buttons = document.querySelectorAll("[data-topic]");
+    const puns = document.querySelectorAll(".pun");
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const selectedTopic = button.dataset.topic;
+
+        buttons.forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+
+        puns.forEach((pun) => {
+          const matches = selectedTopic === "all" ||
+            pun.dataset.topic === selectedTopic;
+          pun.classList.toggle("hidden", !matches);
+        });
+      });
+    });
+  </script>
+</body>
+</html>
