@@ -23,6 +23,7 @@
     .pun { background:white; border:1px solid #d7dfda; border-left:5px solid var(--gold); border-radius:8px; padding:1.35rem 1.5rem; box-shadow:0 3px 10px rgba(23,37,34,.05); }
     .pun p { margin:0; font-size:1.18rem; }
     .topic { display:inline-block; margin-top:.85rem; color:#536760; font-family:Arial,sans-serif; font-size:.78rem; letter-spacing:.05em; text-transform:uppercase; }
+    .topic + .topic::before { content:" · "; }
     footer { border-top:1px solid #d7dfda; color:#536760; padding:2rem 1.5rem 3rem; text-align:center; }
     .hidden { display:none; }
   </style>
@@ -60,14 +61,65 @@
   </main>
   <footer><p>© Department of Puns · Officially groan-worthy.</p></footer>
   <script>
-    const buttons = document.querySelectorAll("[data-topic]");
-    const puns = document.querySelectorAll(".pun");
-    buttons.forEach((button) => button.addEventListener("click", () => {
-      const selectedTopic = button.dataset.topic;
-      buttons.forEach((item) => item.classList.remove("active"));
-      button.classList.add("active");
-      puns.forEach((pun) => pun.classList.toggle("hidden", selectedTopic !== "all" && pun.dataset.topic !== selectedTopic));
-    }));
+    const filters = document.querySelector(".filters");
+    const list = document.querySelector(".pun-list");
+
+    const slug = (topic) => topic.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
+    function applyFilter(selectedTopic) {
+      filters.querySelectorAll("button").forEach((button) => {
+        button.classList.toggle("active", button.dataset.topic === selectedTopic);
+      });
+      list.querySelectorAll(".pun").forEach((pun) => {
+        const topics = (pun.dataset.topics || pun.dataset.topic).split(" ");
+        pun.classList.toggle("hidden", selectedTopic !== "all" && !topics.includes(selectedTopic));
+      });
+    }
+
+    function addFilterButton(label, topic) {
+      const button = document.createElement("button");
+      button.textContent = label;
+      button.dataset.topic = topic;
+      button.addEventListener("click", () => applyFilter(topic));
+      filters.append(button);
+    }
+
+    function renderPuns(puns) {
+      list.replaceChildren();
+      filters.replaceChildren();
+      addFilterButton("All puns", "all");
+
+      const topics = [...new Set(puns.flatMap((pun) => pun.topics))].sort();
+      topics.forEach((topic) => addFilterButton(topic, slug(topic)));
+
+      puns.forEach((pun) => {
+        const card = document.createElement("article");
+        card.className = "pun";
+        card.dataset.topics = pun.topics.map(slug).join(" ");
+
+        const text = document.createElement("p");
+        text.textContent = pun.text;
+        card.append(text);
+
+        pun.topics.forEach((topic) => {
+          const label = document.createElement("span");
+          label.className = "topic";
+          label.textContent = topic;
+          card.append(label);
+        });
+        list.append(card);
+      });
+      applyFilter("all");
+    }
+
+    fetch("/api/puns")
+      .then((response) => response.ok ? response.json() : Promise.reject(response))
+      .then(({ puns }) => renderPuns(puns))
+      .catch(() => applyFilter("all"));
+
+    filters.querySelectorAll("button").forEach((button) => {
+      button.addEventListener("click", () => applyFilter(button.dataset.topic));
+    });
   </script>
 </body>
 </html>
