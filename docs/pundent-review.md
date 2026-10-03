@@ -16,3 +16,7 @@ Use a long, unique password from a password manager. Do not put it in GitHub, a 
 4. **Decline** changes its status to `declined`; it is never published.
 
 The browser receives an eight-hour, HttpOnly, Secure, same-site review session. It contains no password and expires automatically. Use **Sign out** to end it early.
+
+## Finding earlier submissions
+
+Use **Find text in all submissions** to look for a word or phrase across pending, approved, and declined submissions. The search is literal: `%` and `_` are treated as ordinary characters rather than SQL wildcard instructions. Select **Show pending** to return to the normal review queue.

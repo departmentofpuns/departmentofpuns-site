@@ -33,6 +33,10 @@
     #turnstile-container { min-height:65px; margin-top:1rem; }
     .topline { display:flex; justify-content:space-between; align-items:center; gap:1rem; }
     .topline button { margin:0; }
+    .search-controls { display:flex; gap:.5rem; align-items:end; }
+    .search-controls input { margin-top:.35rem; }
+    .search-controls button { flex:none; margin:0 0 .05rem; }
+    @media (max-width:36rem) { .search-controls { display:block; } .search-controls button { margin:.6rem .4rem 0 0; } }
   </style>
 </head>
 <body>
@@ -57,6 +61,14 @@
         <p id="review-summary" class="meta"></p>
         <button id="sign-out" class="secondary" type="button">Sign out</button>
       </div>
+      <form id="search-form">
+        <label for="search-text">Find text in all submissions</label>
+        <div class="search-controls">
+          <input id="search-text" type="search" maxlength="80" placeholder="For example: bee, Noah, or fish oil">
+          <button type="submit">Find</button>
+          <button id="show-pending" class="secondary" type="button">Show pending</button>
+        </div>
+      </form>
       <div id="submission-list"></div>
     </section>
   </main>
@@ -68,9 +80,12 @@
     const loginNotice = document.querySelector("#login-notice");
     const list = document.querySelector("#submission-list");
     const summary = document.querySelector("#review-summary");
+    const searchForm = document.querySelector("#search-form");
+    const searchText = document.querySelector("#search-text");
     let turnstileToken = "";
     let turnstileWidgetId;
     let topics = [];
+    let currentSearch = "";
 
     function showNotice(element, message, type) {
       element.textContent = message;
@@ -107,13 +122,17 @@
       return option;
     }
 
-    function renderSubmissions(submissions) {
+    function renderSubmissions(submissions, search) {
       list.replaceChildren();
-      summary.textContent = submissions.length === 1 ? "1 pun awaiting review" : `${submissions.length} puns awaiting review`;
+      summary.textContent = search
+        ? (submissions.length === 1 ? `1 result for “${search}”` : `${submissions.length} results for “${search}”`)
+        : (submissions.length === 1 ? "1 pun awaiting review" : `${submissions.length} puns awaiting review`);
       if (!submissions.length) {
         const empty = document.createElement("p");
         empty.className = "empty";
-        empty.textContent = "The review desk is clear. A rare moment of pun-derful peace.";
+        empty.textContent = search
+          ? "No submissions contain that text."
+          : "The review desk is clear. A rare moment of pun-derful peace.";
         list.append(empty);
         return;
       }
@@ -124,10 +143,15 @@
         heading.textContent = `Submission #${submission.submission_id}`;
         const meta = document.createElement("p");
         meta.className = "meta";
-        meta.textContent = submission.submitted_by ? `Submitted by: ${submission.submitted_by}` : "Submitted anonymously";
+        meta.textContent = `${submission.status} · ${submission.submitted_by ? `Submitted by: ${submission.submitted_by}` : "Submitted anonymously"}`;
         const pun = document.createElement("p");
         pun.className = "pun-text";
         pun.textContent = submission.pun_text;
+        if (submission.status !== "pending") {
+          card.append(heading, meta, pun);
+          list.append(card);
+          return;
+        }
         const form = document.createElement("form");
         const topicLabel = document.createElement("label");
         topicLabel.textContent = "Topic if approved";
@@ -166,10 +190,7 @@
             });
             const result = await response.json();
             if (!response.ok) throw new Error(result.error || "Review could not be saved.");
-            card.remove();
-            const remaining = list.querySelectorAll(".submission").length;
-            summary.textContent = remaining === 1 ? "1 pun awaiting review" : `${remaining} puns awaiting review`;
-            if (!remaining) renderSubmissions([]);
+            await loadReviewDesk(currentSearch);
           } catch (error) {
             showNotice(notice, error.message || "Review could not be saved.", "error");
             approve.disabled = false; decline.disabled = false;
@@ -183,15 +204,18 @@
       });
     }
 
-    async function loadReviewDesk() {
-      const response = await fetch("/api/review/submissions");
+    async function loadReviewDesk(search = currentSearch) {
+      const query = search ? `?q=${encodeURIComponent(search)}` : "";
+      const response = await fetch(`/api/review/submissions${query}`);
       if (response.status === 401) return false;
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Review desk could not load.");
       topics = result.topics;
+      currentSearch = result.searchText || "";
+      searchText.value = currentSearch;
       loginPanel.classList.add("hidden");
       reviewPanel.classList.remove("hidden");
-      renderSubmissions(result.submissions);
+      renderSubmissions(result.submissions, currentSearch);
       return true;
     }
 
@@ -223,6 +247,15 @@
       turnstileToken = "";
       window.turnstile?.reset(turnstileWidgetId);
       loginButton.disabled = true;
+    });
+
+    searchForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      await loadReviewDesk(searchText.value.trim());
+    });
+
+    document.querySelector("#show-pending").addEventListener("click", async () => {
+      await loadReviewDesk("");
     });
 
     loadReviewDesk().catch((error) => showNotice(loginNotice, error.message, "error"));

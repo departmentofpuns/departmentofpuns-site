@@ -9,13 +9,30 @@ export async function onRequestGet(context) {
     return unauthorized();
   }
 
-  const [submissions, topics] = await context.env.PUNS_DB.batch([
-    context.env.PUNS_DB.prepare(
-      `SELECT submission_id, pun_text, submitted_by, submitted_on
+  const searchText = (new URL(context.request.url).searchParams.get("q") || "").trim();
+  if (searchText.length > 80) {
+    return Response.json({ error: "Search text can be at most 80 characters." }, { status: 400 });
+  }
+
+  // Escape SQLite LIKE's special characters so a search is literal text,
+  // rather than allowing % or _ to turn into an accidental broad search.
+  const escapedSearchText = searchText.replace(/[\\%_]/g, "\\$&");
+  const submissionQuery = searchText
+    ? context.env.PUNS_DB.prepare(
+      `SELECT submission_id, pun_text, submitted_by, submitted_on, status
+       FROM submissions
+       WHERE LOWER(pun_text) LIKE ? ESCAPE '\\'
+       ORDER BY submission_id`,
+    ).bind(`%${escapedSearchText.toLowerCase()}%`)
+    : context.env.PUNS_DB.prepare(
+      `SELECT submission_id, pun_text, submitted_by, submitted_on, status
        FROM submissions
        WHERE status = 'pending'
        ORDER BY submission_id`,
-    ),
+    );
+
+  const [submissions, topics] = await context.env.PUNS_DB.batch([
+    submissionQuery,
     context.env.PUNS_DB.prepare(
       `SELECT topic_id, topic_text
        FROM topics
@@ -26,6 +43,7 @@ export async function onRequestGet(context) {
   return Response.json({
     submissions: submissions.results,
     topics: topics.results,
+    searchText,
   }, { headers: { "Cache-Control": "no-store" } });
 }
 
