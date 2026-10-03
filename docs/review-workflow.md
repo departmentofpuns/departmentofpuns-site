@@ -54,17 +54,17 @@ Approval records the editorial decision. It does not publish the pun by itself.
 
 ## 4. Promote an approved pun
 
-This copies the reviewed text into the public-ready `puns` table and retains the source submission for traceability.
+This creates the public-ready `puns` record and retains the source submission for traceability. The public API reads the pun text and optional credit from `submissions`.
 
 ```sql
-INSERT INTO puns (pun_text, source_submission_id)
-SELECT pun_text, submission_id
+INSERT INTO puns (submission_id)
+SELECT submission_id
 FROM submissions
 WHERE submission_id = <submission_id>
   AND status = 'approved';
 ```
 
-Each submission can be promoted only once because `source_submission_id` is unique. If the pun is already promoted, this statement will report a uniqueness error rather than create a duplicate.
+Each submission can be promoted only once because `submission_id` is unique. If the pun is already promoted, this statement will report a uniqueness error rather than create a duplicate.
 
 ## 5. Assign a topic
 
@@ -83,7 +83,7 @@ INSERT INTO puns_to_topics (pun_id, topic_id)
 SELECT p.pun_id, t.topic_id
 FROM puns AS p
 JOIN topics AS t
-WHERE p.source_submission_id = <submission_id>
+WHERE p.submission_id = <submission_id>
   AND t.topic_text = 'Everyday life';
 ```
 
@@ -116,7 +116,7 @@ WHERE submission_id = <submission_id>;
 
 UPDATE puns
 SET is_active = 0
-WHERE source_submission_id = <submission_id>;
+WHERE submission_id = <submission_id>;
 ```
 
 The public API returns only active puns, so the change appears on the site without a new deployment.

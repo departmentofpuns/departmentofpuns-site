@@ -20,8 +20,7 @@ erDiagram
 
   PUNS {
     INTEGER pun_id PK
-    TEXT pun_text
-    INTEGER source_submission_id FK
+    INTEGER submission_id FK
     TEXT published_on
     INTEGER is_active
   }
@@ -41,7 +40,7 @@ erDiagram
 
 1. A visitor's submission begins in `submissions` with a `pending` status.
 2. The Pun-dent changes it to `approved` or `declined`.
-3. An approved submission is copied into `puns`; `source_submission_id` retains the review trail.
+3. An approved submission receives a row in `puns`; `submission_id` retains the review trail and determines which text and optional credit are published.
 4. One or more entries in `puns_to_topics` determine the topic filters available on the public site.
 5. The public API returns only active puns that have at least one topic.
 
@@ -61,12 +60,11 @@ CREATE TABLE submissions (
 
 CREATE TABLE puns (
   pun_id INTEGER PRIMARY KEY,
-  pun_text TEXT NOT NULL,
-  source_submission_id INTEGER UNIQUE,
+  submission_id INTEGER NOT NULL UNIQUE,
   published_on TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   is_active INTEGER NOT NULL DEFAULT 1
     CHECK (is_active IN (0, 1)),
-  FOREIGN KEY (source_submission_id)
+  FOREIGN KEY (submission_id)
     REFERENCES submissions(submission_id)
 );
 
