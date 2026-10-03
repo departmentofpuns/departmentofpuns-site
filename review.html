@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Pun-dent Review · Department of Puns</title>
+  <style>
+    :root { --ink:#172522; --green:#1b3b36; --gold:#d6a727; --paper:#fffdf7; --line:#d7dfda; --red:#9d1b16; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:var(--paper); font-family:Georgia, "Times New Roman", serif; line-height:1.55; }
+    header { background:var(--green); color:white; padding:2rem 1.5rem; text-align:center; }
+    header a { color:#f7e7a9; }
+    h1 { margin:.35rem 0 0; font-size:clamp(2rem, 6vw, 3.2rem); line-height:1.1; }
+    main { max-width:56rem; margin:0 auto; padding:3rem 1.5rem 4rem; }
+    .panel, .submission { padding:1.5rem; border:1px solid var(--line); border-left:5px solid var(--gold); border-radius:8px; background:white; box-shadow:0 3px 10px rgba(23,37,34,.05); }
+    .panel { max-width:34rem; margin:0 auto; }
+    .submission { margin-top:1rem; }
+    .submission h2 { margin:0; font-size:1.2rem; }
+    .meta, label, .notice, .empty { color:#536760; font-family:Arial,sans-serif; font-size:.9rem; }
+    .pun-text { white-space:pre-wrap; font-size:1.16rem; }
+    label { display:block; margin-top:1rem; font-weight:bold; }
+    input, select, textarea { display:block; width:100%; margin-top:.35rem; padding:.65rem; border:1px solid #9eb2aa; border-radius:5px; color:var(--ink); font:inherit; }
+    textarea { min-height:4.5rem; resize:vertical; }
+    button { margin-top:1rem; border:1px solid var(--green); border-radius:999px; background:var(--green); color:white; cursor:pointer; font:inherit; padding:.55rem 1rem; }
+    button:hover, button:focus-visible { background:#285149; }
+    button.secondary { margin-left:.5rem; background:white; color:var(--green); }
+    button.decline { border-color:var(--red); color:var(--red); }
+    .notice { min-height:1.6rem; margin:1rem 0 0; }
+    .notice.error { color:var(--red); }
+    .notice.success { color:#1b633b; }
+    .hidden { display:none; }
+    #turnstile-container { min-height:65px; margin-top:1rem; }
+    .topline { display:flex; justify-content:space-between; align-items:center; gap:1rem; }
+    .topline button { margin:0; }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="/">← Return to the collection</a>
+    <h1>Pun-dent Review</h1>
+  </header>
+  <main>
+    <section id="login-panel" class="panel">
+      <p>Private review access for the Pun-dent.</p>
+      <form id="login-form">
+        <label for="password">Review password</label>
+        <input id="password" type="password" autocomplete="current-password" required>
+        <div id="turnstile-container" aria-label="Spam protection"></div>
+        <button type="submit" disabled>Open review desk</button>
+        <p id="login-notice" class="notice" role="status"></p>
+      </form>
+    </section>
+
+    <section id="review-panel" class="hidden">
+      <div class="topline">
+        <p id="review-summary" class="meta"></p>
+        <button id="sign-out" class="secondary" type="button">Sign out</button>
+      </div>
+      <div id="submission-list"></div>
+    </section>
+  </main>
+  <script>
+    const loginPanel = document.querySelector("#login-panel");
+    const reviewPanel = document.querySelector("#review-panel");
+    const loginForm = document.querySelector("#login-form");
+    const loginButton = loginForm.querySelector("button");
+    const loginNotice = document.querySelector("#login-notice");
+    const list = document.querySelector("#submission-list");
+    const summary = document.querySelector("#review-summary");
+    let turnstileToken = "";
+    let turnstileWidgetId;
+    let topics = [];
+
+    function showNotice(element, message, type) {
+      element.textContent = message;
+      element.className = `notice ${type}`;
+    }
+
+    async function loadTurnstile() {
+      try {
+        const response = await fetch("/api/turnstile-config");
+        const { siteKey, error } = await response.json();
+        if (!response.ok || !siteKey) throw new Error(error || "Spam protection is unavailable.");
+        const script = document.createElement("script");
+        script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+        script.async = true;
+        script.onload = () => {
+          turnstileWidgetId = window.turnstile.render("#turnstile-container", {
+            sitekey: siteKey, action: "review-login", theme: "light", size: "flexible",
+            callback: (token) => { turnstileToken = token; loginButton.disabled = false; },
+            "expired-callback": () => { turnstileToken = ""; loginButton.disabled = true; },
+            "error-callback": () => showNotice(loginNotice, "Spam protection is unavailable.", "error"),
+          });
+        };
+        script.onerror = () => showNotice(loginNotice, "Spam protection could not load.", "error");
+        document.head.append(script);
+      } catch (error) {
+        showNotice(loginNotice, error.message || "Spam protection is unavailable.", "error");
+      }
+    }
+
+    function optionForTopic(topic) {
+      const option = document.createElement("option");
+      option.value = topic.topic_id;
+      option.textContent = topic.topic_text;
+      return option;
+    }
+
+    function renderSubmissions(submissions) {
+      list.replaceChildren();
+      summary.textContent = submissions.length === 1 ? "1 pun awaiting review" : `${submissions.length} puns awaiting review`;
+      if (!submissions.length) {
+        const empty = document.createElement("p");
+        empty.className = "empty";
+        empty.textContent = "The review desk is clear. A rare moment of pun-derful peace.";
+        list.append(empty);
+        return;
+      }
+      submissions.forEach((submission) => {
+        const card = document.createElement("article");
+        card.className = "submission";
+        const heading = document.createElement("h2");
+        heading.textContent = `Submission #${submission.submission_id}`;
+        const meta = document.createElement("p");
+        meta.className = "meta";
+        meta.textContent = submission.submitted_by ? `Submitted by: ${submission.submitted_by}` : "Submitted anonymously";
+        const pun = document.createElement("p");
+        pun.className = "pun-text";
+        pun.textContent = submission.pun_text;
+        const form = document.createElement("form");
+        const topicLabel = document.createElement("label");
+        topicLabel.textContent = "Topic if approved";
+        const topicSelect = document.createElement("select");
+        topicSelect.required = true;
+        const choose = document.createElement("option");
+        choose.value = "";
+        choose.textContent = "Choose a topic…";
+        topicSelect.append(choose, ...topics.map(optionForTopic));
+        topicLabel.append(topicSelect);
+        const noteLabel = document.createElement("label");
+        noteLabel.textContent = "Private reviewer note (optional)";
+        const note = document.createElement("textarea");
+        note.maxLength = 500;
+        noteLabel.append(note);
+        const approve = document.createElement("button");
+        approve.type = "button";
+        approve.textContent = "Approve and publish";
+        const decline = document.createElement("button");
+        decline.type = "button";
+        decline.className = "secondary decline";
+        decline.textContent = "Decline";
+        const notice = document.createElement("p");
+        notice.className = "notice";
+        notice.setAttribute("role", "status");
+        async function review(action) {
+          if (action === "approve" && !topicSelect.value) {
+            showNotice(notice, "Choose a topic before approving this pun.", "error");
+            return;
+          }
+          approve.disabled = true; decline.disabled = true;
+          try {
+            const response = await fetch("/api/review/submissions", {
+              method: "PATCH", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ submissionId: submission.submission_id, action, topicId: topicSelect.value, reviewerNote: note.value }),
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || "Review could not be saved.");
+            card.remove();
+            const remaining = list.querySelectorAll(".submission").length;
+            summary.textContent = remaining === 1 ? "1 pun awaiting review" : `${remaining} puns awaiting review`;
+            if (!remaining) renderSubmissions([]);
+          } catch (error) {
+            showNotice(notice, error.message || "Review could not be saved.", "error");
+            approve.disabled = false; decline.disabled = false;
+          }
+        }
+        approve.addEventListener("click", () => review("approve"));
+        decline.addEventListener("click", () => review("decline"));
+        form.append(topicLabel, noteLabel, approve, decline, notice);
+        card.append(heading, meta, pun, form);
+        list.append(card);
+      });
+    }
+
+    async function loadReviewDesk() {
+      const response = await fetch("/api/review/submissions");
+      if (response.status === 401) return false;
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Review desk could not load.");
+      topics = result.topics;
+      loginPanel.classList.add("hidden");
+      reviewPanel.classList.remove("hidden");
+      renderSubmissions(result.submissions);
+      return true;
+    }
+
+    loginForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      loginButton.disabled = true;
+      try {
+        const response = await fetch("/api/review/session", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: document.querySelector("#password").value, turnstileToken }),
+        });
+        const result = response.status === 204 ? {} : await response.json();
+        if (!response.ok) throw new Error(result.error || "Sign-in could not be completed.");
+        await loadReviewDesk();
+      } catch (error) {
+        showNotice(loginNotice, error.message || "Sign-in could not be completed.", "error");
+        turnstileToken = "";
+        window.turnstile?.reset(turnstileWidgetId);
+      } finally {
+        if (turnstileToken) loginButton.disabled = false;
+      }
+    });
+
+    document.querySelector("#sign-out").addEventListener("click", async () => {
+      await fetch("/api/review/session", { method: "DELETE" });
+      reviewPanel.classList.add("hidden");
+      loginPanel.classList.remove("hidden");
+      document.querySelector("#password").value = "";
+      turnstileToken = "";
+      window.turnstile?.reset(turnstileWidgetId);
+      loginButton.disabled = true;
+    });
+
+    loadReviewDesk().catch((error) => showNotice(loginNotice, error.message, "error"));
+    loadTurnstile();
+  </script>
+</body>
+</html>
