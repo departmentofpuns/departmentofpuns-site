@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Submit a Pun · Department of Puns</title>
+  <meta name="description" content="Submit clean, kind wordplay for Pun-dent review.">
+  <style>
+    :root { --ink:#172522; --green:#1b3b36; --gold:#d6a727; --paper:#fffdf7; --line:#d7dfda; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:var(--paper); font-family:Georgia, "Times New Roman", serif; line-height:1.55; }
+    header { background:var(--green); color:white; padding:2rem 1.5rem; text-align:center; }
+    header a { color:#f7e7a9; }
+    h1 { margin:.35rem 0 0; font-size:clamp(2rem, 6vw, 3.2rem); line-height:1.1; }
+    main { max-width:42rem; margin:0 auto; padding:3rem 1.5rem 4rem; }
+    .intro { font-size:1.15rem; }
+    form { margin-top:2rem; padding:1.5rem; border:1px solid var(--line); border-left:5px solid var(--gold); border-radius:8px; background:white; box-shadow:0 3px 10px rgba(23,37,34,.05); }
+    label { display:block; margin-top:1.25rem; font-weight:bold; }
+    label:first-of-type { margin-top:0; }
+    .hint { display:block; margin-top:.3rem; color:#536760; font-family:Arial,sans-serif; font-size:.9rem; font-weight:normal; }
+    textarea, input { display:block; width:100%; margin-top:.45rem; padding:.7rem; border:1px solid #9eb2aa; border-radius:5px; color:var(--ink); font:inherit; }
+    textarea { min-height:9rem; resize:vertical; }
+    button { margin-top:1.5rem; border:1px solid var(--green); border-radius:999px; background:var(--green); color:white; cursor:pointer; font:inherit; padding:.6rem 1.15rem; }
+    button:hover, button:focus-visible { background:#285149; }
+    button:disabled { cursor:wait; opacity:.7; }
+    .notice { min-height:1.6rem; margin:1rem 0 0; font-family:Arial,sans-serif; }
+    .notice.error { color:#9d1b16; }
+    .notice.success { color:#1b633b; }
+    .fine-print { margin-top:1.5rem; color:#536760; font-family:Arial,sans-serif; font-size:.86rem; }
+    .bot-trap { position:absolute; left:-10000px; top:auto; width:1px; height:1px; overflow:hidden; }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="/">← Return to the collection</a>
+    <h1>Submit a Pun</h1>
+  </header>
+  <main>
+    <p class="intro">The Department welcomes clean, kind wordplay. Every submission is reviewed by the Pun-dent before it can become officially groan-worthy.</p>
+    <form id="submission-form">
+      <label for="pun-text">Your pun</label>
+      <textarea id="pun-text" name="punText" required maxlength="1000" aria-describedby="pun-hint"></textarea>
+      <span class="hint" id="pun-hint">Keep it clean, kind, and free of sexual or hurtful material.</span>
+
+      <label for="submitted-by">Name for credit <span class="hint">Optional. Leave blank to submit anonymously.</span></label>
+      <input id="submitted-by" name="submittedBy" maxlength="80" autocomplete="name">
+
+      <label class="bot-trap" for="company" aria-hidden="true">Company
+        <input id="company" name="company" tabindex="-1" autocomplete="off">
+      </label>
+
+      <button type="submit">Send to the Pun-dent</button>
+      <p class="notice" id="notice" role="status"></p>
+      <p class="fine-print">Submitting a pun gives the Department permission to consider it for publication. Nothing is published automatically.</p>
+    </form>
+  </main>
+  <script>
+    const form = document.querySelector("#submission-form");
+    const submitButton = form.querySelector("button");
+    const notice = document.querySelector("#notice");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      notice.textContent = "";
+      notice.className = "notice";
+      submitButton.disabled = true;
+      submitButton.textContent = "Sending…";
+
+      const values = new FormData(form);
+      try {
+        const response = await fetch("/api/submissions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            punText: values.get("punText"),
+            submittedBy: values.get("submittedBy"),
+            company: values.get("company"),
+          }),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Unable to submit your pun.");
+
+        form.reset();
+        notice.textContent = result.message;
+        notice.classList.add("success");
+      } catch (error) {
+        notice.textContent = error.message || "Unable to submit your pun.";
+        notice.classList.add("error");
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = "Send to the Pun-dent";
+      }
+    });
+  </script>
+</body>
+</html>
