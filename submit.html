@@ -26,6 +26,7 @@
     .notice { min-height:1.6rem; margin:1rem 0 0; font-family:Arial,sans-serif; }
     .notice.error { color:#9d1b16; }
     .notice.success { color:#1b633b; }
+    #turnstile-container { min-height:65px; margin-top:1.5rem; }
     .fine-print { margin-top:1.5rem; color:#536760; font-family:Arial,sans-serif; font-size:.86rem; }
     .bot-trap { position:absolute; left:-10000px; top:auto; width:1px; height:1px; overflow:hidden; }
   </style>
@@ -49,7 +50,8 @@
         <input id="company" name="company" tabindex="-1" autocomplete="off">
       </label>
 
-      <button type="submit">Send to the Pun-dent</button>
+      <div id="turnstile-container" aria-label="Spam protection"></div>
+      <button type="submit" disabled>Send to the Pun-dent</button>
       <p class="notice" id="notice" role="status"></p>
       <p class="fine-print">Submitting a pun gives the Department permission to consider it for publication. Nothing is published automatically.</p>
     </form>
@@ -58,6 +60,47 @@
     const form = document.querySelector("#submission-form");
     const submitButton = form.querySelector("button");
     const notice = document.querySelector("#notice");
+    let turnstileToken = "";
+    let turnstileWidgetId;
+
+    function showNotice(message, type) {
+      notice.textContent = message;
+      notice.className = `notice ${type}`;
+    }
+
+    async function loadTurnstile() {
+      try {
+        const response = await fetch("/api/turnstile-config");
+        const { siteKey, error } = await response.json();
+        if (!response.ok || !siteKey) throw new Error(error || "Spam protection is unavailable.");
+
+        const script = document.createElement("script");
+        script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+        script.async = true;
+        script.onload = () => {
+          turnstileWidgetId = window.turnstile.render("#turnstile-container", {
+            sitekey: siteKey,
+            action: "submit-pun",
+            theme: "light",
+            size: "flexible",
+            callback: (token) => {
+              turnstileToken = token;
+              submitButton.disabled = false;
+              notice.textContent = "";
+            },
+            "expired-callback": () => {
+              turnstileToken = "";
+              submitButton.disabled = true;
+            },
+            "error-callback": () => showNotice("Spam protection is unavailable. Please try again later.", "error"),
+          });
+        };
+        script.onerror = () => showNotice("Spam protection could not load. Please try again later.", "error");
+        document.head.append(script);
+      } catch (error) {
+        showNotice(error.message || "Spam protection is unavailable. Please try again later.", "error");
+      }
+    }
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -75,22 +118,26 @@
             punText: values.get("punText"),
             submittedBy: values.get("submittedBy"),
             company: values.get("company"),
+            turnstileToken,
           }),
         });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || "Unable to submit your pun.");
 
         form.reset();
-        notice.textContent = result.message;
-        notice.classList.add("success");
+        turnstileToken = "";
+        submitButton.disabled = true;
+        window.turnstile.reset(turnstileWidgetId);
+        showNotice(result.message, "success");
       } catch (error) {
-        notice.textContent = error.message || "Unable to submit your pun.";
-        notice.classList.add("error");
+        showNotice(error.message || "Unable to submit your pun.", "error");
       } finally {
-        submitButton.disabled = false;
+        if (turnstileToken) submitButton.disabled = false;
         submitButton.textContent = "Send to the Pun-dent";
       }
     });
+
+    loadTurnstile();
   </script>
 </body>
 </html>

@@ -88,4 +88,4 @@ CREATE TABLE puns_to_topics (
 
 Groans/ratings, the private Pun-dent review page, and email notifications are intentionally not part of the current schema. They will be added through separate, reviewed migrations when those features are built.
 
-The public submission form writes new records to `submissions` with the default `pending` status; it does not require another table. It includes server-side validation and a basic bot trap. Add Cloudflare Turnstile before widely sharing the submission link.
+The public submission form writes new records to `submissions` with the default `pending` status; it does not require another table. It includes server-side validation, Cloudflare Turnstile validation, and a basic bot trap.
