@@ -19,13 +19,13 @@ export async function onRequestGet(context) {
   const escapedSearchText = searchText.replace(/[\\%_]/g, "\\$&");
   const submissionQuery = searchText
     ? context.env.PUNS_DB.prepare(
-      `SELECT submission_id, pun_text, submitted_by, submitted_on, status
+      `SELECT submission_id, pun_text, submitted_by, submitted_on, status, reviewer_note
        FROM submissions
        WHERE LOWER(pun_text) LIKE ? ESCAPE '\\'
        ORDER BY submission_id`,
     ).bind(`%${escapedSearchText.toLowerCase()}%`)
     : context.env.PUNS_DB.prepare(
-      `SELECT submission_id, pun_text, submitted_by, submitted_on, status
+      `SELECT submission_id, pun_text, submitted_by, submitted_on, status, reviewer_note
        FROM submissions
        WHERE status = 'pending'
        ORDER BY submission_id`,
@@ -64,7 +64,7 @@ export async function onRequestPatch(context) {
   const reviewerNote = String(body.reviewerNote || "").trim();
   const topicId = Number(body.topicId);
 
-  if (!Number.isInteger(submissionId) || submissionId < 1 || !["approve", "decline"].includes(action)) {
+  if (!Number.isInteger(submissionId) || submissionId < 1 || !["approve", "decline", "edit"].includes(action)) {
     return Response.json({ error: "That review request is not valid." }, { status: 400 });
   }
   if (reviewerNote.length > 500) {
@@ -79,6 +79,25 @@ export async function onRequestPatch(context) {
   ).bind(submissionId).first();
   if (!pending) {
     return Response.json({ error: "That submission is no longer pending review." }, { status: 409 });
+  }
+
+  if (action === "edit") {
+    const punText = String(body.punText || "").trim();
+    const submittedBy = String(body.submittedBy || "").trim() || null;
+
+    if (punText.length < 3 || punText.length > 1_000) {
+      return Response.json({ error: "Enter a pun between 3 and 1000 characters." }, { status: 400 });
+    }
+    if (submittedBy && submittedBy.length > 80) {
+      return Response.json({ error: "A credit name can be at most 80 characters." }, { status: 400 });
+    }
+
+    await context.env.PUNS_DB.prepare(
+      `UPDATE submissions
+       SET pun_text = ?, submitted_by = ?, reviewer_note = ?
+       WHERE submission_id = ? AND status = 'pending'`,
+    ).bind(punText, submittedBy, reviewerNote || null, submissionId).run();
+    return Response.json({ message: "Pending submission updated." });
   }
 
   if (action === "decline") {

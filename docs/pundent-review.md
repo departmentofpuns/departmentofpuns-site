@@ -11,9 +11,10 @@ Use a long, unique password from a password manager. Do not put it in GitHub, a 
 ## Reviewing a submission
 
 1. Visit `/review` and sign in.
-2. For an approval, choose one topic and optionally leave a private reviewer note.
-3. **Approve and publish** changes the submission to `approved`, creates its publication row, and gives it the selected topic. It appears on the public site immediately.
-4. **Decline** changes its status to `declined`; it is never published.
+2. Select **Edit submission** to correct the text, contributor credit, or private reviewer note before making a decision. Saving leaves the submission pending.
+3. For an approval, choose one topic and optionally leave a private reviewer note.
+4. **Approve and publish** changes the submission to `approved`, creates its publication row, and gives it the selected topic. It appears on the public site immediately.
+5. **Decline** changes its status to `declined`; it is never published.
 
 The browser receives an eight-hour, HttpOnly, Secure, same-site review session. It contains no password and expires automatically. Use **Sign out** to end it early.
 

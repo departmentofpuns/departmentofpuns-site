@@ -153,6 +153,25 @@
           return;
         }
         const form = document.createElement("form");
+        const editToggle = document.createElement("button");
+        editToggle.type = "button";
+        editToggle.className = "secondary";
+        editToggle.textContent = "Edit submission";
+        const editFields = document.createElement("div");
+        editFields.className = "hidden";
+        const punLabel = document.createElement("label");
+        punLabel.textContent = "Pun text";
+        const punInput = document.createElement("textarea");
+        punInput.maxLength = 1000;
+        punInput.value = submission.pun_text;
+        punLabel.append(punInput);
+        const creditLabel = document.createElement("label");
+        creditLabel.textContent = "Name for credit (optional)";
+        const creditInput = document.createElement("input");
+        creditInput.maxLength = 80;
+        creditInput.value = submission.submitted_by || "";
+        creditLabel.append(creditInput);
+        editFields.append(punLabel, creditLabel);
         const topicLabel = document.createElement("label");
         topicLabel.textContent = "Topic if approved";
         const topicSelect = document.createElement("select");
@@ -166,7 +185,9 @@
         noteLabel.textContent = "Private reviewer note (optional)";
         const note = document.createElement("textarea");
         note.maxLength = 500;
+        note.value = submission.reviewer_note || "";
         noteLabel.append(note);
+        const reviewActions = document.createElement("div");
         const approve = document.createElement("button");
         approve.type = "button";
         approve.textContent = "Approve and publish";
@@ -174,6 +195,11 @@
         decline.type = "button";
         decline.className = "secondary decline";
         decline.textContent = "Decline";
+        reviewActions.append(approve, decline);
+        const saveEdit = document.createElement("button");
+        saveEdit.type = "button";
+        saveEdit.className = "hidden";
+        saveEdit.textContent = "Save changes";
         const notice = document.createElement("p");
         notice.className = "notice";
         notice.setAttribute("role", "status");
@@ -182,23 +208,40 @@
             showNotice(notice, "Choose a topic before approving this pun.", "error");
             return;
           }
-          approve.disabled = true; decline.disabled = true;
+          approve.disabled = true; decline.disabled = true; saveEdit.disabled = true;
           try {
             const response = await fetch("/api/review/submissions", {
               method: "PATCH", headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ submissionId: submission.submission_id, action, topicId: topicSelect.value, reviewerNote: note.value }),
+              body: JSON.stringify({
+                submissionId: submission.submission_id,
+                action,
+                topicId: topicSelect.value,
+                reviewerNote: note.value,
+                punText: punInput.value,
+                submittedBy: creditInput.value,
+              }),
             });
             const result = await response.json();
             if (!response.ok) throw new Error(result.error || "Review could not be saved.");
             await loadReviewDesk(currentSearch);
           } catch (error) {
             showNotice(notice, error.message || "Review could not be saved.", "error");
-            approve.disabled = false; decline.disabled = false;
+            approve.disabled = false; decline.disabled = false; saveEdit.disabled = false;
           }
         }
+        editToggle.addEventListener("click", () => {
+          const isEditing = editFields.classList.toggle("hidden") === false;
+          editToggle.textContent = isEditing ? "Cancel edit" : "Edit submission";
+          pun.classList.toggle("hidden", isEditing);
+          meta.classList.toggle("hidden", isEditing);
+          topicLabel.classList.toggle("hidden", isEditing);
+          reviewActions.classList.toggle("hidden", isEditing);
+          saveEdit.classList.toggle("hidden", !isEditing);
+        });
         approve.addEventListener("click", () => review("approve"));
         decline.addEventListener("click", () => review("decline"));
-        form.append(topicLabel, noteLabel, approve, decline, notice);
+        saveEdit.addEventListener("click", () => review("edit"));
+        form.append(editToggle, editFields, topicLabel, noteLabel, reviewActions, saveEdit, notice);
         card.append(heading, meta, pun, form);
         list.append(card);
       });
