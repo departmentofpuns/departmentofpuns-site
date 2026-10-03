@@ -21,3 +21,7 @@ The browser receives an eight-hour, HttpOnly, Secure, same-site review session. 
 ## Finding earlier submissions
 
 Use **Find text in all submissions** to look for a word or phrase across pending, approved, and declined submissions. The search is literal: `%` and `_` are treated as ordinary characters rather than SQL wildcard instructions. Select **Show pending** to return to the normal review queue.
+
+## Correcting or removing a published pun
+
+Find an approved submission to reveal its publication controls. **Edit published pun** corrects the public text or contributor credit while preserving the original submission, approval, and reviewer note. **Unpublish** hides the pun from the public collection by marking its publication inactive; it does not delete the submission. An unpublished pun can be restored with **Re-publish**.

@@ -148,7 +148,79 @@
         pun.className = "pun-text";
         pun.textContent = submission.pun_text;
         if (submission.status !== "pending") {
-          card.append(heading, meta, pun);
+          if (submission.status === "approved" && submission.pun_id) {
+            const publication = document.createElement("p");
+            publication.className = "meta";
+            publication.textContent = submission.is_active ? "Published on the public collection" : "Unpublished — kept for the review record";
+            const form = document.createElement("form");
+            const editToggle = document.createElement("button");
+            editToggle.type = "button";
+            editToggle.className = "secondary";
+            editToggle.textContent = "Edit published pun";
+            const editFields = document.createElement("div");
+            editFields.className = "hidden";
+            const punLabel = document.createElement("label");
+            punLabel.textContent = "Pun text";
+            const punInput = document.createElement("textarea");
+            punInput.maxLength = 1000;
+            punInput.value = submission.pun_text;
+            punLabel.append(punInput);
+            const creditLabel = document.createElement("label");
+            creditLabel.textContent = "Name for credit (optional)";
+            const creditInput = document.createElement("input");
+            creditInput.maxLength = 80;
+            creditInput.value = submission.submitted_by || "";
+            creditLabel.append(creditInput);
+            editFields.append(punLabel, creditLabel);
+            const saveEdit = document.createElement("button");
+            saveEdit.type = "button";
+            saveEdit.className = "hidden";
+            saveEdit.textContent = "Save published changes";
+            const publishToggle = document.createElement("button");
+            publishToggle.type = "button";
+            publishToggle.className = "secondary decline";
+            publishToggle.textContent = submission.is_active ? "Unpublish" : "Re-publish";
+            const notice = document.createElement("p");
+            notice.className = "notice";
+            notice.setAttribute("role", "status");
+            async function updatePublished(action) {
+              saveEdit.disabled = true;
+              publishToggle.disabled = true;
+              try {
+                const response = await fetch("/api/review/submissions", {
+                  method: "PATCH", headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    submissionId: submission.submission_id,
+                    action,
+                    punText: punInput.value,
+                    submittedBy: creditInput.value,
+                  }),
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || "Published pun could not be updated.");
+                await loadReviewDesk(currentSearch);
+              } catch (error) {
+                showNotice(notice, error.message || "Published pun could not be updated.", "error");
+                saveEdit.disabled = false;
+                publishToggle.disabled = false;
+              }
+            }
+            editToggle.addEventListener("click", () => {
+              const isEditing = editFields.classList.toggle("hidden") === false;
+              editToggle.textContent = isEditing ? "Cancel edit" : "Edit published pun";
+              pun.classList.toggle("hidden", isEditing);
+              meta.classList.toggle("hidden", isEditing);
+              publication.classList.toggle("hidden", isEditing);
+              publishToggle.classList.toggle("hidden", isEditing);
+              saveEdit.classList.toggle("hidden", !isEditing);
+            });
+            saveEdit.addEventListener("click", () => updatePublished("edit-published"));
+            publishToggle.addEventListener("click", () => updatePublished(submission.is_active ? "unpublish" : "republish"));
+            form.append(editToggle, editFields, saveEdit, publishToggle, notice);
+            card.append(heading, meta, pun, publication, form);
+          } else {
+            card.append(heading, meta, pun);
+          }
           list.append(card);
           return;
         }

@@ -19,16 +19,20 @@ export async function onRequestGet(context) {
   const escapedSearchText = searchText.replace(/[\\%_]/g, "\\$&");
   const submissionQuery = searchText
     ? context.env.PUNS_DB.prepare(
-      `SELECT submission_id, pun_text, submitted_by, submitted_on, status, reviewer_note
-       FROM submissions
+      `SELECT s.submission_id, s.pun_text, s.submitted_by, s.submitted_on,
+              s.status, s.reviewer_note, p.pun_id, p.is_active
+       FROM submissions AS s
+       LEFT JOIN puns AS p ON p.submission_id = s.submission_id
        WHERE LOWER(pun_text) LIKE ? ESCAPE '\\'
-       ORDER BY submission_id`,
+       ORDER BY s.submission_id`,
     ).bind(`%${escapedSearchText.toLowerCase()}%`)
     : context.env.PUNS_DB.prepare(
-      `SELECT submission_id, pun_text, submitted_by, submitted_on, status, reviewer_note
-       FROM submissions
-       WHERE status = 'pending'
-       ORDER BY submission_id`,
+      `SELECT s.submission_id, s.pun_text, s.submitted_by, s.submitted_on,
+              s.status, s.reviewer_note, p.pun_id, p.is_active
+       FROM submissions AS s
+       LEFT JOIN puns AS p ON p.submission_id = s.submission_id
+       WHERE s.status = 'pending'
+       ORDER BY s.submission_id`,
     );
 
   const [submissions, topics] = await context.env.PUNS_DB.batch([
@@ -64,7 +68,9 @@ export async function onRequestPatch(context) {
   const reviewerNote = String(body.reviewerNote || "").trim();
   const topicId = Number(body.topicId);
 
-  if (!Number.isInteger(submissionId) || submissionId < 1 || !["approve", "decline", "edit"].includes(action)) {
+  if (!Number.isInteger(submissionId) || submissionId < 1 || ![
+    "approve", "decline", "edit", "edit-published", "unpublish", "republish",
+  ].includes(action)) {
     return Response.json({ error: "That review request is not valid." }, { status: 400 });
   }
   if (reviewerNote.length > 500) {
@@ -72,6 +78,47 @@ export async function onRequestPatch(context) {
   }
   if (action === "approve" && (!Number.isInteger(topicId) || topicId < 1)) {
     return Response.json({ error: "Choose a topic before approving a pun." }, { status: 400 });
+  }
+
+  if (["edit-published", "unpublish", "republish"].includes(action)) {
+    const published = await context.env.PUNS_DB.prepare(
+      `SELECT p.pun_id, p.is_active
+       FROM puns AS p
+       JOIN submissions AS s ON s.submission_id = p.submission_id
+       WHERE s.submission_id = ? AND s.status = 'approved'`,
+    ).bind(submissionId).first();
+    if (!published) {
+      return Response.json({ error: "That pun is not published." }, { status: 409 });
+    }
+
+    if (action === "edit-published") {
+      const punText = String(body.punText || "").trim();
+      const submittedBy = String(body.submittedBy || "").trim() || null;
+      if (punText.length < 3 || punText.length > 1_000) {
+        return Response.json({ error: "Enter a pun between 3 and 1000 characters." }, { status: 400 });
+      }
+      if (submittedBy && submittedBy.length > 80) {
+        return Response.json({ error: "A credit name can be at most 80 characters." }, { status: 400 });
+      }
+      await context.env.PUNS_DB.prepare(
+        `UPDATE submissions
+         SET pun_text = ?, submitted_by = ?
+         WHERE submission_id = ? AND status = 'approved'`,
+      ).bind(punText, submittedBy, submissionId).run();
+      return Response.json({ message: "Published pun updated." });
+    }
+
+    const shouldBeActive = action === "republish" ? 1 : 0;
+    const expectedActive = action === "republish" ? 0 : 1;
+    if (published.is_active !== expectedActive) {
+      return Response.json({
+        error: shouldBeActive ? "That pun is already published." : "That pun is already unpublished.",
+      }, { status: 409 });
+    }
+    await context.env.PUNS_DB.prepare(
+      "UPDATE puns SET is_active = ? WHERE pun_id = ? AND is_active = ?",
+    ).bind(shouldBeActive, published.pun_id, expectedActive).run();
+    return Response.json({ message: shouldBeActive ? "Pun re-published." : "Pun unpublished." });
   }
 
   const pending = await context.env.PUNS_DB.prepare(
