@@ -26,7 +26,9 @@
     .search input { width:100%; border:1px solid #9eb2aa; border-radius:999px; color:var(--ink); font:inherit; padding:.45rem .85rem; }
     .search button { width:100%; }
     .collection-status { min-height:1.6rem; margin:0 0 1rem; color:#536760; font-family:Arial,sans-serif; font-size:.9rem; }
-    .control-panel summary { display:none; }
+    .search-panel summary { display:none; }
+    .topic-filter-panel summary { display:block; margin:0 0 .5rem; color:#536760; cursor:default; font-family:Arial,sans-serif; font-size:.9rem; font-weight:bold; list-style:none; pointer-events:none; }
+    .topic-filter-panel summary::-webkit-details-marker { display:none; }
     .filters { display:grid; gap:.6rem; }
     button { border:1px solid #9eb2aa; border-radius:999px; background:white; color:var(--green); cursor:pointer; font:inherit; padding:.45rem 1rem; }
     button:hover, button.active { background:var(--green); border-color:var(--green); color:white; }
@@ -48,7 +50,7 @@
       .controls { position:static; padding-bottom:1.25rem; border-bottom:1px solid #d7dfda; }
       .search { margin:1rem 0; }
       .control-panel { margin-bottom:1rem; }
-      .control-panel summary { display:block; cursor:pointer; color:var(--green); font-family:Arial,sans-serif; font-size:.9rem; font-weight:bold; list-style:none; text-decoration:underline; text-underline-offset:.2em; }
+      .control-panel summary { display:block; cursor:pointer; color:var(--green); font-family:Arial,sans-serif; font-size:.9rem; font-weight:bold; list-style:none; pointer-events:auto; text-decoration:underline; text-underline-offset:.2em; }
       .control-panel summary::-webkit-details-marker { display:none; }
       .control-panel summary::after { content:"▸"; float:right; text-decoration:none; }
       .control-panel[open] summary { margin-bottom:.75rem; }
