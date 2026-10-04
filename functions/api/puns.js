@@ -11,7 +11,7 @@ export async function onRequestGet(context) {
      JOIN topics AS t ON t.topic_id = pt.topic_id
      WHERE p.is_active = 1
      GROUP BY p.pun_id, s.pun_text, s.submitted_by
-     ORDER BY p.pun_id`,
+     ORDER BY MAX(p.published_on) DESC, p.pun_id DESC`,
   ).all();
 
   const puns = results.map((pun) => ({
