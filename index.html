@@ -26,7 +26,7 @@
     .search input { width:100%; border:1px solid #9eb2aa; border-radius:999px; color:var(--ink); font:inherit; padding:.45rem .85rem; }
     .search button { width:100%; }
     .collection-status { min-height:1.6rem; margin:0 0 1rem; color:#536760; font-family:Arial,sans-serif; font-size:.9rem; }
-    .control-heading { margin:0 0 .5rem; color:#536760; font-family:Arial,sans-serif; font-size:.9rem; font-weight:bold; }
+    .topic-filter-panel summary { display:none; }
     .filters { display:grid; gap:.6rem; }
     button { border:1px solid #9eb2aa; border-radius:999px; background:white; color:var(--green); cursor:pointer; font:inherit; padding:.45rem 1rem; }
     button:hover, button.active { background:var(--green); border-color:var(--green); color:white; }
@@ -39,8 +39,16 @@
     footer { border-top:1px solid #d7dfda; color:#536760; padding:2rem 1.5rem 3rem; text-align:center; }
     .hidden { display:none; }
     @media (max-width:45rem) {
+      header { padding:2.25rem 1rem 2rem; }
+      .seal { width:48px; height:48px; margin-bottom:.75rem; font-size:1.4rem; }
+      .motto { margin-top:.75rem; font-size:1.05rem; }
+      main { padding:1.75rem 1rem 3rem; }
+      .introduction { margin-bottom:1.5rem; }
       .collection-layout { grid-template-columns:1fr; gap:1.5rem; }
-      .controls { position:static; padding-bottom:1.5rem; border-bottom:1px solid #d7dfda; }
+      .controls { position:static; padding-bottom:1.25rem; border-bottom:1px solid #d7dfda; }
+      .search { margin:1rem 0; }
+      .topic-filter-panel summary { display:block; cursor:pointer; color:#536760; font-family:Arial,sans-serif; font-size:.9rem; font-weight:bold; }
+      .topic-filter-panel[open] summary { margin-bottom:.75rem; }
       .filters { display:flex; flex-wrap:wrap; }
       .collection-status { text-align:center; }
     }
@@ -67,16 +75,18 @@
             <button id="clear-search" class="hidden" type="button">Clear</button>
           </div>
         </form>
-        <p class="control-heading">Filter by topic</p>
-        <nav class="filters" aria-label="Filter puns by topic">
-          <button class="active" data-topic="all">All puns</button>
-          <button data-topic="animals">Animals</button>
-          <button data-topic="food">Food</button>
-          <button data-topic="science">Science</button>
-          <button data-topic="weather">Weather</button>
-          <button data-topic="work">Work</button>
-          <button data-topic="everyday">Everyday life</button>
-        </nav>
+        <details class="topic-filter-panel">
+          <summary>Filter by topic</summary>
+          <nav class="filters" aria-label="Filter puns by topic">
+            <button class="active" data-topic="all">All puns</button>
+            <button data-topic="animals">Animals</button>
+            <button data-topic="food">Food</button>
+            <button data-topic="science">Science</button>
+            <button data-topic="weather">Weather</button>
+            <button data-topic="work">Work</button>
+            <button data-topic="everyday">Everyday life</button>
+          </nav>
+        </details>
       </aside>
       <div class="collection-results">
         <p id="collection-status" class="collection-status" role="status"></p>
@@ -102,7 +112,16 @@
     const searchInput = document.querySelector("#pun-search");
     const clearSearch = document.querySelector("#clear-search");
     const collectionStatus = document.querySelector("#collection-status");
+    const topicFilterPanel = document.querySelector(".topic-filter-panel");
     let currentSearch = "";
+
+    function updateTopicFilterPanel(event) {
+      topicFilterPanel.open = !event.matches;
+    }
+
+    const narrowScreen = window.matchMedia("(max-width:45rem)");
+    updateTopicFilterPanel(narrowScreen);
+    narrowScreen.addEventListener("change", updateTopicFilterPanel);
 
     const slug = (topic) => topic.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
