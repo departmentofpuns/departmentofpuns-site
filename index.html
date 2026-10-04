@@ -22,10 +22,11 @@
     .submit-link:hover, .submit-link:focus-visible { background:#285149; }
     .search { margin:1.25rem 0; }
     .search label { display:block; color:#536760; font-family:Arial,sans-serif; font-size:.9rem; font-weight:bold; }
-    .search-controls { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.4rem; }
-    .search input { min-width:0; flex:1 1 100%; border:1px solid #9eb2aa; border-radius:999px; color:var(--ink); font:inherit; padding:.45rem .85rem; }
-    .search button { flex:none; }
+    .search-controls { display:grid; gap:.5rem; margin-top:.4rem; }
+    .search input { width:100%; border:1px solid #9eb2aa; border-radius:999px; color:var(--ink); font:inherit; padding:.45rem .85rem; }
+    .search button { width:100%; }
     .collection-status { min-height:1.6rem; margin:0 0 1rem; color:#536760; font-family:Arial,sans-serif; font-size:.9rem; }
+    .control-heading { margin:0 0 .5rem; color:#536760; font-family:Arial,sans-serif; font-size:.9rem; font-weight:bold; }
     .filters { display:grid; gap:.6rem; }
     button { border:1px solid #9eb2aa; border-radius:999px; background:white; color:var(--green); cursor:pointer; font:inherit; padding:.45rem 1rem; }
     button:hover, button.active { background:var(--green); border-color:var(--green); color:white; }
@@ -40,8 +41,6 @@
     @media (max-width:45rem) {
       .collection-layout { grid-template-columns:1fr; gap:1.5rem; }
       .controls { position:static; padding-bottom:1.5rem; border-bottom:1px solid #d7dfda; }
-      .search-controls { flex-wrap:nowrap; }
-      .search input { flex:1 1 auto; }
       .filters { display:flex; flex-wrap:wrap; }
       .collection-status { text-align:center; }
     }
@@ -68,6 +67,7 @@
             <button id="clear-search" class="hidden" type="button">Clear</button>
           </div>
         </form>
+        <p class="control-heading">Filter puns</p>
         <nav class="filters" aria-label="Filter puns by topic">
           <button class="active" data-topic="all">All puns</button>
           <button data-topic="animals">Animals</button>
