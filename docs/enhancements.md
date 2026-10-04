@@ -15,10 +15,10 @@ This is a working list, not a promise or a schedule. Check an item when it is li
 - [x] Unpublish and re-publish without deleting the review record
 - [x] Separate Preview database for safely testing future changes
 - [x] Show newest published puns first
+- [x] Add a public **Find a pun** search that searches published puns only
 
 ## Public collection
 
-- [ ] Add a public **Find a pun** search that searches published puns only
 - [ ] Move public controls into a left column on wider screens: Submit a pun, Find a pun, topic filters, and ordering
 - [ ] Add pagination if the newest-first collection still feels too long to browse
 - [ ] Add a **Groan** button and a displayed groan count for each pun

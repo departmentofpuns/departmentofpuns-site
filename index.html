@@ -16,6 +16,12 @@
     .motto { max-width:35rem; margin:1rem auto 0; color:#f7e7a9; font-size:1.18rem; }
     main { max-width:56rem; margin:0 auto; padding:3rem 1.5rem 4rem; }
     .introduction { max-width:42rem; margin:0 auto 2.5rem; text-align:center; font-size:1.1rem; }
+    .search { max-width:34rem; margin:0 auto 1.25rem; }
+    .search label { display:block; color:#536760; font-family:Arial,sans-serif; font-size:.9rem; font-weight:bold; }
+    .search-controls { display:flex; gap:.5rem; margin-top:.4rem; }
+    .search input { min-width:0; flex:1; border:1px solid #9eb2aa; border-radius:999px; color:var(--ink); font:inherit; padding:.45rem .85rem; }
+    .search button { flex:none; }
+    .collection-status { min-height:1.6rem; color:#536760; font-family:Arial,sans-serif; font-size:.9rem; text-align:center; }
     .filters { display:flex; flex-wrap:wrap; justify-content:center; gap:.6rem; margin-bottom:2rem; }
     button { border:1px solid #9eb2aa; border-radius:999px; background:white; color:var(--green); cursor:pointer; font:inherit; padding:.45rem 1rem; }
     button:hover, button.active { background:var(--green); border-color:var(--green); color:white; }
@@ -39,6 +45,15 @@
     <section class="introduction">
       <p>Clean, kind wordplay, reviewed by the Pun-dent. <a href="/submit.html">Submit a pun for official consideration.</a></p>
     </section>
+    <form class="search" id="search-form">
+      <label for="pun-search">Find a pun</label>
+      <div class="search-controls">
+        <input id="pun-search" type="search" maxlength="80" placeholder="Try bee, ark, or fish oil">
+        <button type="submit">Find</button>
+        <button id="clear-search" class="hidden" type="button">Clear</button>
+      </div>
+    </form>
+    <p id="collection-status" class="collection-status" role="status"></p>
     <nav class="filters" aria-label="Filter puns by topic">
       <button class="active" data-topic="all">All puns</button>
       <button data-topic="animals">Animals</button>
@@ -64,6 +79,11 @@
   <script>
     const filters = document.querySelector(".filters");
     const list = document.querySelector(".pun-list");
+    const searchForm = document.querySelector("#search-form");
+    const searchInput = document.querySelector("#pun-search");
+    const clearSearch = document.querySelector("#clear-search");
+    const collectionStatus = document.querySelector("#collection-status");
+    let currentSearch = "";
 
     const slug = (topic) => topic.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
@@ -85,7 +105,7 @@
       filters.append(button);
     }
 
-    function renderPuns(puns) {
+    function renderPuns(puns, search) {
       list.replaceChildren();
       filters.replaceChildren();
       addFilterButton("All puns", "all");
@@ -117,12 +137,42 @@
         list.append(card);
       });
       applyFilter("all");
+      collectionStatus.textContent = search
+        ? (puns.length === 1 ? `1 pun found for “${search}”` : `${puns.length} puns found for “${search}”`)
+        : `${puns.length} published puns`;
     }
 
-    fetch("/api/puns")
-      .then((response) => response.ok ? response.json() : Promise.reject(response))
-      .then(({ puns }) => renderPuns(puns))
-      .catch(() => applyFilter("all"));
+    async function loadPuns(search = currentSearch) {
+      const query = search ? `?q=${encodeURIComponent(search)}` : "";
+      const response = await fetch(`/api/puns${query}`);
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Puns could not be loaded.");
+      currentSearch = result.searchText || "";
+      searchInput.value = currentSearch;
+      clearSearch.classList.toggle("hidden", !currentSearch);
+      const pageUrl = new URL(window.location.href);
+      currentSearch ? pageUrl.searchParams.set("q", currentSearch) : pageUrl.searchParams.delete("q");
+      window.history.replaceState({}, "", pageUrl);
+      renderPuns(result.puns, currentSearch);
+    }
+
+    searchForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      loadPuns(searchInput.value.trim()).catch((error) => {
+        collectionStatus.textContent = error.message || "Puns could not be loaded.";
+      });
+    });
+
+    clearSearch.addEventListener("click", () => {
+      loadPuns("").catch((error) => {
+        collectionStatus.textContent = error.message || "Puns could not be loaded.";
+      });
+    });
+
+    const initialSearch = new URL(window.location.href).searchParams.get("q") || "";
+    loadPuns(initialSearch).catch((error) => {
+      collectionStatus.textContent = error.message || "Puns could not be loaded.";
+    });
 
     filters.querySelectorAll("button").forEach((button) => {
       button.addEventListener("click", () => applyFilter(button.dataset.topic));
