@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Department of Puns</title>
-  <meta name="description" content="Clean, kind, fully groan wordplay.">
+  <meta name="description" content="Clean, kind, and family-friendly wordplay.">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231b3b36'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-size='36' font-family='Georgia' fill='%23f7e7a9'%3EP%3C/text%3E%3C/svg%3E">
   <style>
     :root { --ink:#172522; --green:#1b3b36; --gold:#d6a727; --paper:#fffdf7; }
@@ -13,7 +13,7 @@
     header { background:var(--green); color:white; padding:4.5rem 1.5rem 3.75rem; text-align:center; }
     .seal { display:inline-grid; place-items:center; width:64px; height:64px; margin-bottom:1rem; border:2px solid var(--gold); border-radius:50%; color:var(--gold); font-size:1.8rem; font-weight:bold; }
     h1 { margin:0; font-size:clamp(2.4rem, 7vw, 4.6rem); line-height:1; letter-spacing:-.04em; }
-    .motto { max-width:35rem; margin:1rem auto 0; color:#f7e7a9; font-size:1.18rem; }
+    .motto { max-width:35rem; margin:1rem auto 0; color:#f7e7a9; font-family:Arial,sans-serif; font-size:1rem; font-weight:bold; letter-spacing:.02em; }
     main { max-width:70rem; margin:0 auto; padding:3rem 1.5rem 4rem; }
     .introduction { max-width:42rem; margin:0 auto 2.5rem; text-align:center; font-size:1.1rem; }
     .collection-layout { display:grid; grid-template-columns:13rem minmax(0, 1fr); gap:2.5rem; align-items:start; }
@@ -25,7 +25,13 @@
     .search-controls { display:grid; gap:.5rem; margin-top:.4rem; }
     .search input { width:100%; border:1px solid #9eb2aa; border-radius:999px; color:var(--ink); font:inherit; padding:.45rem .85rem; }
     .search button { width:100%; }
-    .collection-status { min-height:1.6rem; margin:0 0 1rem; color:#536760; font-family:Arial,sans-serif; font-size:.9rem; }
+    .collection-status { min-height:1.6rem; margin:1.25rem 0 0; color:#536760; font-family:Arial,sans-serif; font-size:.9rem; }
+    .todays-groan { margin:0 0 2rem; }
+    .todays-groan h2 { margin:0 0 .7rem; color:var(--green); font-size:1.3rem; }
+    .todays-groan h2 a { color:inherit; text-decoration:none; }
+    .todays-groan h2 a:hover, .todays-groan h2 a:focus-visible { text-decoration:underline; text-underline-offset:.18em; }
+    .featured-pun { border-left-width:7px; }
+    .more-groans { margin:0 0 .7rem; color:var(--green); font-size:1.3rem; }
     .search-panel summary { display:none; }
     .topic-filter-panel summary { display:block; margin:0 0 .5rem; color:#536760; cursor:default; font-family:Arial,sans-serif; font-size:.9rem; font-weight:bold; list-style:none; pointer-events:none; }
     .topic-filter-panel summary::-webkit-details-marker { display:none; }
@@ -43,7 +49,7 @@
     @media (max-width:45rem) {
       header { padding:2.25rem 1rem 2rem; }
       .seal { width:48px; height:48px; margin-bottom:.75rem; font-size:1.4rem; }
-      .motto { margin-top:.75rem; font-size:1.05rem; }
+      .motto { margin-top:.75rem; font-size:.9rem; }
       main { padding:1.75rem 1rem 3rem; }
       .introduction { margin-bottom:1.5rem; }
       .collection-layout { grid-template-columns:1fr; gap:1.5rem; }
@@ -66,12 +72,9 @@
   <header>
     <div class="seal" aria-hidden="true">P</div>
     <h1>Department of Puns</h1>
-    <p class="motto">No pun is funny until it’s fully groan.</p>
+    <p class="motto">Clean, Kind, and Family-friendly Wordplay</p>
   </header>
   <main>
-    <section class="introduction">
-      <p>Clean, kind wordplay, reviewed by the Pun-dent.</p>
-    </section>
     <div class="collection-layout">
       <aside class="controls" aria-label="Collection controls">
         <details class="search-panel control-panel">
@@ -97,10 +100,15 @@
             <button data-topic="everyday">Everyday life</button>
           </nav>
         </details>
+        <p id="collection-status" class="collection-status" role="status"></p>
         <a class="submit-link" href="/submit.html">Submit a pun</a>
       </aside>
       <div class="collection-results">
-        <p id="collection-status" class="collection-status" role="status"></p>
+        <section id="todays-groan" class="todays-groan" hidden aria-label="Today’s Groan">
+          <h2><a href="/pun-of-the-day">Today’s Groan:</a></h2>
+          <article id="todays-groan-card" class="pun featured-pun"></article>
+        </section>
+        <h2 class="more-groans">More Groans:</h2>
         <section class="pun-list" aria-label="Pun collection">
           <article class="pun" data-topic="animals"><p>Did you know bees are allergic to pollen? We know that because they develop hives!</p><span class="topic">Animals</span></article>
           <article class="pun" data-topic="animals"><p>Where did Noah keep the bees? In the ark-hive.</p><span class="topic">Animals</span></article>
@@ -124,7 +132,10 @@
     const clearSearch = document.querySelector("#clear-search");
     const collectionStatus = document.querySelector("#collection-status");
     const controlPanels = document.querySelectorAll(".control-panel");
+    const todaysGroan = document.querySelector("#todays-groan");
+    const todaysGroanCard = document.querySelector("#todays-groan-card");
     let currentSearch = "";
+    let todaysGroanId = null;
 
     function updateControlPanels(event) {
       controlPanels.forEach((panel) => { panel.open = !event.matches; });
@@ -154,6 +165,25 @@
       filters.append(button);
     }
 
+    function addPunContents(card, pun) {
+      const text = document.createElement("p");
+      text.textContent = pun.text;
+      card.append(text);
+
+      pun.topics.forEach((topic) => {
+        const label = document.createElement("span");
+        label.className = "topic";
+        label.textContent = topic;
+        card.append(label);
+      });
+      if (pun.submittedBy) {
+        const credit = document.createElement("p");
+        credit.className = "credit";
+        credit.textContent = `Submitted by: ${pun.submittedBy}`;
+        card.append(credit);
+      }
+    }
+
     function renderPuns(puns, search) {
       list.replaceChildren();
       filters.replaceChildren();
@@ -162,27 +192,11 @@
       const topics = [...new Set(puns.flatMap((pun) => pun.topics))].sort();
       topics.forEach((topic) => addFilterButton(topic, slug(topic)));
 
-      puns.forEach((pun) => {
+      puns.filter((pun) => pun.id !== todaysGroanId).forEach((pun) => {
         const card = document.createElement("article");
         card.className = "pun";
         card.dataset.topics = pun.topics.map(slug).join(" ");
-
-        const text = document.createElement("p");
-        text.textContent = pun.text;
-        card.append(text);
-
-        pun.topics.forEach((topic) => {
-          const label = document.createElement("span");
-          label.className = "topic";
-          label.textContent = topic;
-          card.append(label);
-        });
-        if (pun.submittedBy) {
-          const credit = document.createElement("p");
-          credit.className = "credit";
-          credit.textContent = `Submitted by: ${pun.submittedBy}`;
-          card.append(credit);
-        }
+        addPunContents(card, pun);
         list.append(card);
       });
       applyFilter("all");
@@ -205,6 +219,21 @@
       renderPuns(result.puns, currentSearch);
     }
 
+    async function loadTodaysGroan() {
+      try {
+        const response = await fetch("/api/pun-of-the-day");
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Today’s Groan could not be loaded.");
+        todaysGroanId = result.pun.id;
+        todaysGroanCard.replaceChildren();
+        addPunContents(todaysGroanCard, result.pun);
+        todaysGroan.hidden = false;
+      } catch {
+        // The full collection remains available if the featured daily pun is unavailable.
+        todaysGroan.hidden = true;
+      }
+    }
+
     searchForm.addEventListener("submit", (event) => {
       event.preventDefault();
       loadPuns(searchInput.value.trim()).catch((error) => {
@@ -219,7 +248,7 @@
     });
 
     const initialSearch = new URL(window.location.href).searchParams.get("q") || "";
-    loadPuns(initialSearch).catch((error) => {
+    loadTodaysGroan().finally(() => loadPuns(initialSearch)).catch((error) => {
       collectionStatus.textContent = error.message || "Puns could not be loaded.";
     });
 
