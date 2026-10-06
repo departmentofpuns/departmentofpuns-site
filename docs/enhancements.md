@@ -17,13 +17,13 @@ This is a working list, not a promise or a schedule. Check an item when it is li
 - [x] Show newest published puns first
 - [x] Add a public **Find a pun** search that searches published puns only
 - [x] Move Submit a pun, Find a pun, and topic filters into a responsive left column
+- [x] Publish a non-repeating `GET /api/pun-of-the-day` endpoint for daily messages
 
 ## Public collection
 
 - [ ] Add pagination if the newest-first collection still feels too long to browse
 - [ ] Make the visible result count reflect the selected topic as well as any Find text
 - [ ] Replace the separate Clear button with an × inside the Find text field
-- [ ] Publish a non-repeating `GET /api/pun-of-the-day` endpoint for daily messages
 - [ ] Add a **Groan** button and a displayed groan count for each pun
 - [ ] Prevent repeated groans from the same visitor from inflating a count
 - [ ] Add an **Order by** choice: Newest first or Most groaned
