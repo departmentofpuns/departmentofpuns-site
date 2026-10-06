@@ -7,6 +7,7 @@ erDiagram
   SUBMISSIONS o|--o| PUNS : "may become"
   PUNS ||--o{ PUNS_TO_TOPICS : "is tagged by"
   TOPICS ||--o{ PUNS_TO_TOPICS : "categorizes"
+  PUNS ||--o{ DAILY_PUN_SELECTIONS : "is selected for"
 
   SUBMISSIONS {
     INTEGER submission_id PK
@@ -34,6 +35,13 @@ erDiagram
     INTEGER pun_id PK, FK
     INTEGER topic_id PK, FK
   }
+
+  DAILY_PUN_SELECTIONS {
+    TEXT selection_date PK
+    INTEGER pun_id FK
+    INTEGER cycle_number
+    TEXT selected_on
+  }
 ```
 
 ## Review flow
@@ -43,6 +51,7 @@ erDiagram
 3. An approved submission receives a row in `puns`; `submission_id` retains the review trail and determines which text and optional credit are published.
 4. One or more entries in `puns_to_topics` determine the topic filters available on the public site.
 5. The public API returns only active puns that have at least one topic.
+6. The Pun of the Day API records its daily choice in `daily_pun_selections` and completes a full active-pun cycle before repeating one.
 
 ## D1 / SQLite definitions
 
@@ -80,10 +89,20 @@ CREATE TABLE puns_to_topics (
   FOREIGN KEY (pun_id) REFERENCES puns(pun_id),
   FOREIGN KEY (topic_id) REFERENCES topics(topic_id)
 );
+
+CREATE TABLE daily_pun_selections (
+  selection_date TEXT PRIMARY KEY
+    CHECK (selection_date GLOB '????-??-??'),
+  pun_id INTEGER NOT NULL,
+  cycle_number INTEGER NOT NULL CHECK (cycle_number > 0),
+  selected_on TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (pun_id) REFERENCES puns(pun_id),
+  UNIQUE (cycle_number, pun_id)
+);
 ```
 
 ## Not yet implemented
 
-Groans/ratings, the private Pun-dent review page, and email notifications are intentionally not part of the current schema. They will be added through separate, reviewed migrations when those features are built.
+Groans/ratings and delivery notifications are intentionally not part of the current schema. They will be added through separate, reviewed migrations when those features are built.
 
 The public submission form writes new records to `submissions` with the default `pending` status; it does not require another table. It includes server-side validation, Cloudflare Turnstile validation, and a basic bot trap.
