@@ -25,12 +25,13 @@
     .search-controls { display:grid; gap:.5rem; margin-top:.4rem; }
     .search input { width:100%; border:1px solid #9eb2aa; border-radius:999px; color:var(--ink); font:inherit; padding:.45rem .85rem; }
     .search button { width:100%; }
-    .collection-status { min-height:1.6rem; margin:0 0 1rem; color:#536760; font-family:Arial,sans-serif; font-size:.9rem; }
+    .collection-status { min-height:1.6rem; margin:1.25rem 0 0; color:#536760; font-family:Arial,sans-serif; font-size:.9rem; }
     .todays-groan { margin:0 0 2rem; }
     .todays-groan h2 { margin:0 0 .7rem; color:var(--green); font-size:1.3rem; }
     .todays-groan h2 a { color:inherit; text-decoration:none; }
     .todays-groan h2 a:hover, .todays-groan h2 a:focus-visible { text-decoration:underline; text-underline-offset:.18em; }
     .featured-pun { border-left-width:7px; }
+    .more-groans { margin:0 0 .7rem; color:var(--green); font-size:1.3rem; }
     .search-panel summary { display:none; }
     .topic-filter-panel summary { display:block; margin:0 0 .5rem; color:#536760; cursor:default; font-family:Arial,sans-serif; font-size:.9rem; font-weight:bold; list-style:none; pointer-events:none; }
     .topic-filter-panel summary::-webkit-details-marker { display:none; }
@@ -102,14 +103,15 @@
             <button data-topic="everyday">Everyday life</button>
           </nav>
         </details>
+        <p id="collection-status" class="collection-status" role="status"></p>
         <a class="submit-link" href="/submit.html">Submit a pun</a>
       </aside>
       <div class="collection-results">
         <section id="todays-groan" class="todays-groan" hidden aria-label="Today’s Groan">
-          <h2><a href="/pun-of-the-day">Today’s Groan</a></h2>
+          <h2><a href="/pun-of-the-day">Today’s Groan:</a></h2>
           <article id="todays-groan-card" class="pun featured-pun"></article>
         </section>
-        <p id="collection-status" class="collection-status" role="status"></p>
+        <h2 class="more-groans">More Groans:</h2>
         <section class="pun-list" aria-label="Pun collection">
           <article class="pun" data-topic="animals"><p>Did you know bees are allergic to pollen? We know that because they develop hives!</p><span class="topic">Animals</span></article>
           <article class="pun" data-topic="animals"><p>Where did Noah keep the bees? In the ark-hive.</p><span class="topic">Animals</span></article>
