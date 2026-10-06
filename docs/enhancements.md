@@ -18,6 +18,7 @@ This is a working list, not a promise or a schedule. Check an item when it is li
 - [x] Add a public **Find a pun** search that searches published puns only
 - [x] Move Submit a pun, Find a pun, and topic filters into a responsive left column
 - [x] Publish a non-repeating `GET /api/pun-of-the-day` endpoint for daily messages
+- [ ] Create a shareable `/pun-of-the-day` page using the daily API selection
 
 ## Public collection
 

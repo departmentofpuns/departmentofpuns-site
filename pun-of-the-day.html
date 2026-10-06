@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pun of the Day · Department of Puns</title>
+  <meta name="description" content="Today’s official groan from the Department of Puns.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231b3b36'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-size='36' font-family='Georgia' fill='%23f7e7a9'%3EP%3C/text%3E%3C/svg%3E">
+  <style>
+    :root { --ink:#172522; --green:#1b3b36; --gold:#d6a727; --paper:#fffdf7; --line:#d7dfda; }
+    * { box-sizing:border-box; }
+    body { min-height:100vh; margin:0; color:var(--ink); background:var(--paper); font-family:Georgia, "Times New Roman", serif; line-height:1.55; }
+    header { background:var(--green); color:white; padding:2rem 1.5rem; text-align:center; }
+    header a { color:#f7e7a9; }
+    h1 { margin:.35rem 0 0; font-size:clamp(2rem, 6vw, 3.4rem); line-height:1.1; }
+    .motto { margin:.65rem auto 0; color:#f7e7a9; }
+    main { max-width:46rem; margin:0 auto; padding:3.5rem 1.5rem 4rem; }
+    .date { margin:0 0 1rem; color:#536760; font-family:Arial,sans-serif; font-size:.9rem; text-align:center; }
+    .pun { padding:2rem; border:1px solid var(--line); border-left:6px solid var(--gold); border-radius:9px; background:white; box-shadow:0 3px 10px rgba(23,37,34,.05); }
+    .pun-text { margin:0; font-size:clamp(1.35rem, 4vw, 1.8rem); line-height:1.42; }
+    .topic { display:inline-block; margin-top:1.1rem; color:#536760; font-family:Arial,sans-serif; font-size:.78rem; letter-spacing:.05em; text-transform:uppercase; }
+    .topic + .topic::before { content:" · "; }
+    .credit { margin:1rem 0 0; color:#536760; font-family:Arial,sans-serif; font-size:.7rem; text-align:right; }
+    .notice { min-height:4rem; color:#536760; font-family:Arial,sans-serif; text-align:center; }
+    .browse { display:block; width:max-content; max-width:100%; margin:2rem auto 0; border:1px solid var(--green); border-radius:999px; color:var(--green); padding:.55rem 1rem; text-decoration:none; }
+    .browse:hover, .browse:focus-visible { background:var(--green); color:white; }
+    footer { border-top:1px solid var(--line); color:#536760; padding:2rem 1.5rem 3rem; text-align:center; }
+    @media (max-width:36rem) { header { padding:1.75rem 1rem; } main { padding:2.5rem 1rem 3rem; } .pun { padding:1.5rem; } }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="/">← Department of Puns</a>
+    <h1>Pun of the Day</h1>
+    <p class="motto">Today’s official groan.</p>
+  </header>
+  <main>
+    <p id="date" class="date"></p>
+    <section id="pun" class="pun" hidden aria-live="polite"></section>
+    <p id="notice" class="notice" role="status">Selecting today’s pun…</p>
+    <a class="browse" href="/">Browse the collection</a>
+  </main>
+  <footer><p>© Department of Puns · Officially groan-worthy.</p></footer>
+  <script>
+    const date = document.querySelector("#date");
+    const punCard = document.querySelector("#pun");
+    const notice = document.querySelector("#notice");
+
+    function displayDate(value) {
+      const [year, month, day] = value.split("-").map(Number);
+      return new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/Indiana/Indianapolis",
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }).format(new Date(year, month - 1, day));
+    }
+
+    function renderPun({ date: selectionDate, pun }) {
+      date.textContent = displayDate(selectionDate);
+      const text = document.createElement("p");
+      text.className = "pun-text";
+      text.textContent = pun.text;
+      punCard.append(text);
+      pun.topics.forEach((topic) => {
+        const label = document.createElement("span");
+        label.className = "topic";
+        label.textContent = topic;
+        punCard.append(label);
+      });
+      if (pun.submittedBy) {
+        const credit = document.createElement("p");
+        credit.className = "credit";
+        credit.textContent = `Submitted by: ${pun.submittedBy}`;
+        punCard.append(credit);
+      }
+      punCard.hidden = false;
+      notice.remove();
+    }
+
+    fetch("/api/pun-of-the-day")
+      .then((response) => response.ok ? response.json() : Promise.reject(response))
+      .then(renderPun)
+      .catch(() => {
+        notice.textContent = "Today’s pun is taking a short groan break. Please try again soon.";
+      });
+  </script>
+</body>
+</html>
