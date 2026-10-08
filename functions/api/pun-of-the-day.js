@@ -1,3 +1,5 @@
+import { getGroanVisitorToken } from "./_groans.js";
+
 const TIME_ZONE = "America/Indiana/Indianapolis";
 
 function localDate() {
@@ -41,6 +43,7 @@ async function getSelectionForToday(db, selectionDate) {
 export async function onRequestGet(context) {
   const db = context.env.PUNS_DB;
   const selectionDate = localDate();
+  const visitorToken = getGroanVisitorToken(context.request) || "";
   let selection = await getSelectionForToday(db, selectionDate);
 
   if (!selection) {
@@ -80,14 +83,19 @@ export async function onRequestGet(context) {
        p.pun_id,
        s.pun_text,
        s.submitted_by,
-       GROUP_CONCAT(t.topic_text, '|') AS topics
+       GROUP_CONCAT(t.topic_text, '|') AS topics,
+       (SELECT COUNT(*) FROM pun_groans AS g WHERE g.pun_id = p.pun_id) AS groan_count,
+       EXISTS(
+         SELECT 1 FROM pun_groans AS g
+         WHERE g.pun_id = p.pun_id AND g.visitor_token = ?
+       ) AS has_groaned
      FROM puns AS p
      JOIN submissions AS s ON s.submission_id = p.submission_id
      JOIN puns_to_topics AS pt ON pt.pun_id = p.pun_id
      JOIN topics AS t ON t.topic_id = pt.topic_id
      WHERE p.pun_id = ? AND p.is_active = 1
      GROUP BY p.pun_id, s.pun_text, s.submitted_by`,
-  ).bind(selection?.pun_id).first();
+  ).bind(visitorToken, selection?.pun_id).first();
 
   if (!pun) {
     return Response.json({ error: "No published puns are available yet." }, { status: 404 });
@@ -101,6 +109,8 @@ export async function onRequestGet(context) {
       text: pun.pun_text,
       submittedBy: pun.submitted_by || null,
       topics: pun.topics.split("|"),
+      groanCount: Number(pun.groan_count || 0),
+      hasGroaned: Number(pun.has_groaned) === 1,
     },
   }, { headers: { "Cache-Control": "no-store" } });
 }
