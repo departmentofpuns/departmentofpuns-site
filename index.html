@@ -169,6 +169,11 @@
       filters.append(button);
     }
 
+    function groanLabel(count) {
+      const groans = Number(count) || 0;
+      return `🤦 (${groans}) ${groans === 1 ? "Groan" : "Groans"}`;
+    }
+
     function addPunContents(card, pun) {
       const text = document.createElement("p");
       text.textContent = pun.text;
@@ -188,7 +193,7 @@
       groanButton.type = "button";
       groanButton.dataset.punId = pun.id;
       groanButton.dataset.groanCount = String(pun.groanCount || 0);
-      groanButton.textContent = `🤦 Groan (${pun.groanCount || 0})`;
+      groanButton.textContent = groanLabel(pun.groanCount);
       if (pun.hasGroaned) {
         groanButton.disabled = true;
         groanButton.title = "You have already groaned at this pun.";
@@ -217,12 +222,12 @@
         if (!response.ok) throw new Error(result.error || "That groan could not be recorded.");
         pun.groanCount = result.groanCount;
         pun.hasGroaned = true;
-        button.textContent = `🤦 Groan (${result.groanCount})`;
+        button.textContent = groanLabel(result.groanCount);
         button.title = "You have already groaned at this pun.";
         button.setAttribute("aria-label", `You have already groaned. ${result.groanCount} groans.`);
       } catch (error) {
         button.disabled = false;
-        button.textContent = `🤦 Groan (${pun.groanCount || 0})`;
+        button.textContent = groanLabel(pun.groanCount);
         button.setAttribute("aria-label", error.message || "That groan could not be recorded.");
       }
     }
