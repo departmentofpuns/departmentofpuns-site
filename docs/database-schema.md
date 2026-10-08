@@ -8,6 +8,7 @@ erDiagram
   PUNS ||--o{ PUNS_TO_TOPICS : "is tagged by"
   TOPICS ||--o{ PUNS_TO_TOPICS : "categorizes"
   PUNS ||--o{ DAILY_PUN_SELECTIONS : "is selected for"
+  PUNS ||--o{ PUN_GROANS : "receives"
 
   SUBMISSIONS {
     INTEGER submission_id PK
@@ -42,6 +43,12 @@ erDiagram
     INTEGER cycle_number
     TEXT selected_on
   }
+
+  PUN_GROANS {
+    INTEGER pun_id PK, FK
+    TEXT visitor_token PK
+    TEXT groaned_on
+  }
 ```
 
 ## Review flow
@@ -52,6 +59,7 @@ erDiagram
 4. One or more entries in `puns_to_topics` determine the topic filters available on the public site.
 5. The public API returns only active puns that have at least one topic.
 6. The Pun of the Day API records its daily choice in `daily_pun_selections` and completes a full active-pun cycle before repeating one.
+7. A visitor's browser can record one anonymous groan per pun in `pun_groans`; no name, email address, or IP address is stored for this feature.
 
 ## D1 / SQLite definitions
 
@@ -99,10 +107,18 @@ CREATE TABLE daily_pun_selections (
   FOREIGN KEY (pun_id) REFERENCES puns(pun_id),
   UNIQUE (cycle_number, pun_id)
 );
+
+CREATE TABLE pun_groans (
+  pun_id INTEGER NOT NULL,
+  visitor_token TEXT NOT NULL,
+  groaned_on TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (pun_id, visitor_token),
+  FOREIGN KEY (pun_id) REFERENCES puns(pun_id)
+);
 ```
 
 ## Not yet implemented
 
-Groans/ratings and delivery notifications are intentionally not part of the current schema. They will be added through separate, reviewed migrations when those features are built.
+Delivery notifications are intentionally not part of the current schema. They will be added through separate, reviewed migrations when those features are built.
 
 The public submission form writes new records to `submissions` with the default `pending` status; it does not require another table. It includes server-side validation, Cloudflare Turnstile validation, and a basic bot trap.

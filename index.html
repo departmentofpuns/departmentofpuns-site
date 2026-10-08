@@ -43,7 +43,11 @@
     .pun p { margin:0; font-size:1.18rem; }
     .topic { display:inline-block; margin-top:.85rem; color:#536760; font-family:Arial,sans-serif; font-size:.78rem; letter-spacing:.05em; text-transform:uppercase; }
     .topic + .topic::before { content:" · "; }
-    .credit { margin:.65rem 0 0; color:#536760; font-family:Arial,sans-serif; font-size:.6rem; text-align:right; }
+    .pun-footer { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-top:.65rem; }
+    .groan-button { display:inline-flex; align-items:center; gap:.35rem; border-color:#9eb2aa; font-family:Arial,sans-serif; font-size:.75rem; padding:.35rem .7rem; }
+    .groan-button:disabled { cursor:default; opacity:.7; }
+    .groan-count { font-variant-numeric:tabular-nums; }
+    .credit { margin:0; color:#536760; font-family:Arial,sans-serif; font-size:.6rem; text-align:right; }
     footer { border-top:1px solid #d7dfda; color:#536760; padding:2rem 1.5rem 3rem; text-align:center; }
     .hidden { display:none; }
     @media (max-width:45rem) {
@@ -176,11 +180,50 @@
         label.textContent = topic;
         card.append(label);
       });
+
+      const footer = document.createElement("div");
+      footer.className = "pun-footer";
+      const groanButton = document.createElement("button");
+      groanButton.className = "groan-button";
+      groanButton.type = "button";
+      groanButton.dataset.punId = pun.id;
+      groanButton.dataset.groanCount = String(pun.groanCount || 0);
+      groanButton.textContent = `🤦 Groan (${pun.groanCount || 0})`;
+      if (pun.hasGroaned) {
+        groanButton.disabled = true;
+        groanButton.title = "You have already groaned at this pun.";
+        groanButton.setAttribute("aria-label", `You have already groaned. ${pun.groanCount || 0} groans.`);
+      } else {
+        groanButton.setAttribute("aria-label", `Groan at this pun. ${pun.groanCount || 0} groans.`);
+        groanButton.addEventListener("click", () => recordGroan(pun, groanButton));
+      }
+      footer.append(groanButton);
+
       if (pun.submittedBy) {
         const credit = document.createElement("p");
         credit.className = "credit";
         credit.textContent = `Submitted by: ${pun.submittedBy}`;
-        card.append(credit);
+        footer.append(credit);
+      }
+      card.append(footer);
+    }
+
+    async function recordGroan(pun, button) {
+      button.disabled = true;
+      button.textContent = "🤦 Groaning…";
+      try {
+        const response = await fetch(`/api/puns/${pun.id}/groan`, { method: "POST" });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "That groan could not be recorded.");
+        pun.groanCount = result.groanCount;
+        pun.hasGroaned = true;
+        button.textContent = `🤦 Groan (${result.groanCount})`;
+        button.title = "You have already groaned at this pun.";
+        button.setAttribute("aria-label", `You have already groaned. ${result.groanCount} groans.`);
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = `🤦 Groan (${pun.groanCount || 0})`;
+        button.setAttribute("aria-label", error.message || "That groan could not be recorded.");
       }
     }
 
