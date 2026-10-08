@@ -61,11 +61,16 @@
       }).format(new Date(year, month - 1, day));
     }
 
+    function groanLabel(count) {
+      const groans = Number(count) || 0;
+      return `🤦 (${groans}) ${groans === 1 ? "Groan" : "Groans"}`;
+    }
+
     function createGroanButton(pun) {
       const button = document.createElement("button");
       button.className = "groan-button";
       button.type = "button";
-      button.textContent = `🤦 Groan (${pun.groanCount || 0})`;
+      button.textContent = groanLabel(pun.groanCount);
       if (pun.hasGroaned) {
         button.disabled = true;
         button.title = "You have already groaned at this pun.";
@@ -77,11 +82,11 @@
             const response = await fetch(`/api/puns/${pun.id}/groan`, { method: "POST" });
             const result = await response.json();
             if (!response.ok) throw new Error(result.error || "That groan could not be recorded.");
-            button.textContent = `🤦 Groan (${result.groanCount})`;
+            button.textContent = groanLabel(result.groanCount);
             button.title = "You have already groaned at this pun.";
           } catch {
             button.disabled = false;
-            button.textContent = `🤦 Groan (${pun.groanCount || 0})`;
+            button.textContent = groanLabel(pun.groanCount);
           }
         });
       }
