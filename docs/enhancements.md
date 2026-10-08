@@ -26,8 +26,8 @@ This is a working list, not a promise or a schedule. Check an item when it is li
 - [ ] Add pagination if the newest-first collection still feels too long to browse
 - [ ] Make the visible result count reflect the selected topic as well as any Find text
 - [ ] Replace the separate Clear button with an × inside the Find text field
-- [ ] Add a **Groan** button and a displayed groan count for each pun
-- [ ] Prevent repeated groans from the same visitor from inflating a count
+- [x] Add a **Groan** button and a displayed groan count for each pun
+- [x] Prevent repeated groans from the same visitor from inflating a count
 - [ ] Add an **Order by** choice: Newest first or Most groaned
 
 ## Pun-dent review desk
