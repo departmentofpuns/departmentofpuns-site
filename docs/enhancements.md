@@ -43,6 +43,11 @@ This is a working list, not a promise or a schedule. Check an item when it is li
 - [ ] Keep versioned database migration scripts with an "up" and a "down" path where practical
 - [ ] Test database changes against the Preview database before applying them to production
 - [ ] Establish a repeatable private database-export backup routine, in addition to Cloudflare Time Travel
+- [ ] Offer an invite-only daily Pun of the Day email for verified friends
+  - Use a small scheduled Cloudflare Worker to send the existing daily selection from `pundent@departmentofpuns.com`.
+  - Keep the initial recipient list private and limited to Cloudflare-verified destination addresses.
+  - Honor the chosen `America/Indiana/Indianapolis` delivery time across daylight saving changes.
+  - Add an opt-out mechanism before expanding beyond a small personal group.
 - [ ] Send a private notification when a new pun is awaiting review
   - Preferred option: Pushover — a focused, ad-free notification app with a small one-time license and no monthly subscription.
   - Free alternative: Telegram bot — send a message to the Pun-dent's private chat.
