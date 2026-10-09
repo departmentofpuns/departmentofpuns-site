@@ -44,6 +44,7 @@ This is a working list, not a promise or a schedule. Check an item when it is li
 - [ ] Test database changes against the Preview database before applying them to production
 - [ ] Establish a repeatable private database-export backup routine, in addition to Cloudflare Time Travel
 - [ ] Offer an invite-only daily Pun of the Day email for verified friends
+  ([draft specification](daily-pun-email.md))
   - Use a small scheduled Cloudflare Worker to send the existing daily selection from `pundent@departmentofpuns.com`.
   - Keep the initial recipient list private and limited to Cloudflare-verified destination addresses.
   - Honor the chosen `America/Indiana/Indianapolis` delivery time across daylight saving changes.
