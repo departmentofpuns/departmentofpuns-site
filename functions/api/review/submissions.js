@@ -20,18 +20,24 @@ export async function onRequestGet(context) {
   const submissionQuery = searchText
     ? context.env.PUNS_DB.prepare(
       `SELECT s.submission_id, s.pun_text, s.submitted_by, s.submitted_on,
-              s.status, s.reviewer_note, p.pun_id, p.is_active
+              s.status, s.reviewer_note, p.pun_id, p.is_active,
+              MIN(pt.topic_id) AS topic_id
        FROM submissions AS s
        LEFT JOIN puns AS p ON p.submission_id = s.submission_id
+       LEFT JOIN puns_to_topics AS pt ON pt.pun_id = p.pun_id
        WHERE LOWER(pun_text) LIKE ? ESCAPE '\\'
+       GROUP BY s.submission_id
        ORDER BY s.submission_id`,
     ).bind(`%${escapedSearchText.toLowerCase()}%`)
     : context.env.PUNS_DB.prepare(
       `SELECT s.submission_id, s.pun_text, s.submitted_by, s.submitted_on,
-              s.status, s.reviewer_note, p.pun_id, p.is_active
+              s.status, s.reviewer_note, p.pun_id, p.is_active,
+              MIN(pt.topic_id) AS topic_id
        FROM submissions AS s
        LEFT JOIN puns AS p ON p.submission_id = s.submission_id
+       LEFT JOIN puns_to_topics AS pt ON pt.pun_id = p.pun_id
        WHERE s.status = 'pending'
+       GROUP BY s.submission_id
        ORDER BY s.submission_id`,
     );
 
@@ -82,10 +88,12 @@ export async function onRequestPatch(context) {
 
   if (["edit-published", "unpublish", "republish"].includes(action)) {
     const published = await context.env.PUNS_DB.prepare(
-      `SELECT p.pun_id, p.is_active
+      `SELECT p.pun_id, p.is_active, MIN(pt.topic_id) AS topic_id
        FROM puns AS p
        JOIN submissions AS s ON s.submission_id = p.submission_id
-       WHERE s.submission_id = ? AND s.status = 'approved'`,
+       LEFT JOIN puns_to_topics AS pt ON pt.pun_id = p.pun_id
+       WHERE s.submission_id = ? AND s.status = 'approved'
+       GROUP BY p.pun_id`,
     ).bind(submissionId).first();
     if (!published) {
       return Response.json({ error: "That pun is not published." }, { status: 409 });
@@ -100,11 +108,28 @@ export async function onRequestPatch(context) {
       if (submittedBy && submittedBy.length > 80) {
         return Response.json({ error: "A credit name can be at most 80 characters." }, { status: 400 });
       }
-      await context.env.PUNS_DB.prepare(
-        `UPDATE submissions
-         SET pun_text = ?, submitted_by = ?
-         WHERE submission_id = ? AND status = 'approved'`,
-      ).bind(punText, submittedBy, submissionId).run();
+      if (!Number.isInteger(topicId) || topicId < 1) {
+        return Response.json({ error: "Choose a topic for the published pun." }, { status: 400 });
+      }
+      const topic = await context.env.PUNS_DB.prepare(
+        "SELECT topic_id FROM topics WHERE topic_id = ?",
+      ).bind(topicId).first();
+      if (!topic) {
+        return Response.json({ error: "Choose one of the listed topics." }, { status: 400 });
+      }
+      await context.env.PUNS_DB.batch([
+        context.env.PUNS_DB.prepare(
+          `UPDATE submissions
+           SET pun_text = ?, submitted_by = ?
+           WHERE submission_id = ? AND status = 'approved'`,
+        ).bind(punText, submittedBy, submissionId),
+        context.env.PUNS_DB.prepare(
+          "DELETE FROM puns_to_topics WHERE pun_id = ? AND topic_id = ?",
+        ).bind(published.pun_id, published.topic_id),
+        context.env.PUNS_DB.prepare(
+          "INSERT OR IGNORE INTO puns_to_topics (pun_id, topic_id) VALUES (?, ?)",
+        ).bind(published.pun_id, topicId),
+      ]);
       return Response.json({ message: "Published pun updated." });
     }
 

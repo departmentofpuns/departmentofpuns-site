@@ -36,6 +36,9 @@
     .search-controls { display:flex; gap:.5rem; align-items:end; }
     .search-controls input { margin-top:.35rem; }
     .search-controls button { flex:none; margin:0 0 .05rem; }
+    .topic-controls { display:flex; gap:.5rem; align-items:end; }
+    .topic-controls input { margin-top:.35rem; }
+    .topic-controls button { flex:none; margin:0 0 .05rem; }
     @media (max-width:36rem) { .search-controls { display:block; } .search-controls button { margin:.6rem .4rem 0 0; } }
   </style>
 </head>
@@ -122,6 +125,46 @@
       return option;
     }
 
+    async function createTopic(topicInput, topicSelect, notice) {
+      const topicText = topicInput.value.trim();
+      if (!topicText) {
+        showNotice(notice, "Enter a name for the new topic.", "error");
+        return;
+      }
+      try {
+        const response = await fetch("/api/review/topics", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ topicText }),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Topic could not be created.");
+        topics = [...topics, result.topic].sort((a, b) => a.topic_text.localeCompare(b.topic_text));
+        topicSelect.append(optionForTopic(result.topic));
+        topicSelect.value = result.topic.topic_id;
+        topicInput.value = "";
+        showNotice(notice, `Topic “${result.topic.topic_text}” created and selected.`, "success");
+      } catch (error) {
+        showNotice(notice, error.message || "Topic could not be created.", "error");
+      }
+    }
+
+    function appendNewTopicControl(container, topicSelect, notice) {
+      const controls = document.createElement("div");
+      controls.className = "topic-controls";
+      const topicInput = document.createElement("input");
+      topicInput.type = "text";
+      topicInput.maxLength = 80;
+      topicInput.placeholder = "New topic";
+      topicInput.setAttribute("aria-label", "New topic name");
+      const create = document.createElement("button");
+      create.type = "button";
+      create.className = "secondary";
+      create.textContent = "Add topic";
+      create.addEventListener("click", () => createTopic(topicInput, topicSelect, notice));
+      controls.append(topicInput, create);
+      container.append(controls);
+    }
+
     function renderSubmissions(submissions, search) {
       list.replaceChildren();
       summary.textContent = search
@@ -171,7 +214,14 @@
             creditInput.maxLength = 80;
             creditInput.value = submission.submitted_by || "";
             creditLabel.append(creditInput);
-            editFields.append(punLabel, creditLabel);
+            const topicLabel = document.createElement("label");
+            topicLabel.textContent = "Topic";
+            const topicSelect = document.createElement("select");
+            topicSelect.required = true;
+            topicSelect.append(...topics.map(optionForTopic));
+            topicSelect.value = submission.topic_id || "";
+            topicLabel.append(topicSelect);
+            editFields.append(punLabel, creditLabel, topicLabel);
             const saveEdit = document.createElement("button");
             saveEdit.type = "button";
             saveEdit.className = "hidden";
@@ -194,6 +244,7 @@
                     action,
                     punText: punInput.value,
                     submittedBy: creditInput.value,
+                    topicId: topicSelect.value,
                   }),
                 });
                 const result = await response.json();
@@ -205,6 +256,7 @@
                 publishToggle.disabled = false;
               }
             }
+            appendNewTopicControl(editFields, topicSelect, notice);
             editToggle.addEventListener("click", () => {
               const isEditing = editFields.classList.toggle("hidden") === false;
               editToggle.textContent = isEditing ? "Cancel edit" : "Edit published pun";
@@ -275,6 +327,7 @@
         const notice = document.createElement("p");
         notice.className = "notice";
         notice.setAttribute("role", "status");
+        appendNewTopicControl(topicLabel, topicSelect, notice);
         async function review(action) {
           if (action === "approve" && !topicSelect.value) {
             showNotice(notice, "Choose a topic before approving this pun.", "error");

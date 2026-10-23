@@ -32,8 +32,8 @@ This is a working list, not a promise or a schedule. Check an item when it is li
 
 ## Pun-dent review desk
 
-- [ ] Add a protected way to create a new topic while reviewing a pun
-- [ ] Allow the topic of a published pun to be corrected
+- [x] Add a protected way to create a new topic while reviewing a pun
+- [x] Allow the topic of a published pun to be corrected
 - [ ] Add a confirmation before unpublishing a pun
 - [ ] Consider topic management: rename or retire an unused topic
 - [ ] Consider a lightweight editorial history for later corrections
